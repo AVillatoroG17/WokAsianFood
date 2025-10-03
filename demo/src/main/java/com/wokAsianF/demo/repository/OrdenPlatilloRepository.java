@@ -8,6 +8,7 @@ import java.util.List;
 
 @Repository
 public interface OrdenPlatilloRepository extends JpaRepository<OrdenPlatillo, Integer> {
-    List<OrdenPlatillo> findByEstadoPreparacion(EstadoPreparacion estadoPreparacion);
-    List<OrdenPlatillo> findByOrdenOrdenId(Integer ordenId);
+List<OrdenPlatillo> findByCocineroAsignado_UsuarioIdAndEstadoPreparacion(Integer cocineroId, EstadoPreparacion estadoPreparacion);
+List<OrdenPlatillo> findByOrden_OrdenId(Integer ordenId);
+
 }
