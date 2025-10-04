@@ -51,4 +51,12 @@ public class PlatilloController {
         }
         return ResponseEntity.notFound().build();
     }
+    @PatchMapping("/{id}/disponibilidad")
+public ResponseEntity<Void> actualizarDisponibilidad(@PathVariable Integer id, @RequestParam Boolean disponible) {
+    if (platilloService.actualizarDisponibilidad(id, disponible)) {
+        return ResponseEntity.ok().build();
+    }
+    return ResponseEntity.notFound().build();
+}
+
 }

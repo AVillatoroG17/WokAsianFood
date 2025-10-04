@@ -60,4 +60,12 @@ public class OrdenController {
         }
         return ResponseEntity.notFound().build();
     }
+    @PostMapping("/{id}/platillos")
+public ResponseEntity<Void> agregarPlatillo(@PathVariable Integer id, @RequestBody AgregarPlatilloDTO dto) {
+    if (ordenService.agregarPlatillo(id, dto)) {
+        return ResponseEntity.ok().build();
+    }
+    return ResponseEntity.badRequest().build();
+}
+
 }
