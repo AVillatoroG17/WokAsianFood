@@ -2,6 +2,7 @@ package com.wokAsianF.demo.entity;
 
 import jakarta.persistence.*;
 import java.math.BigDecimal;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @Entity
 @Table(name = "platillo")
@@ -36,6 +37,10 @@ public class Platillo {
     @Column(name = "ingredientes_descripcion", columnDefinition = "TEXT")
     private String ingredientesDescripcion;
 
+    @Transient // Este campo no se mapea a la base de datos
+    @JsonProperty("nombreCategoria") // Mapea la propiedad 'nombreCategoria' del JSON a este campo
+    private String tempNombreCategoria;
+
     public Platillo() {}
 
     public Integer getPlatilloId() { return platilloId; }
@@ -56,4 +61,9 @@ public class Platillo {
     public void setImagenUrl(String imagenUrl) { this.imagenUrl = imagenUrl; }
     public String getIngredientesDescripcion() { return ingredientesDescripcion; }
     public void setIngredientesDescripcion(String ingredientesDescripcion) { this.ingredientesDescripcion = ingredientesDescripcion; }
+
+    // Getter y Setter para tempNombreCategoria
+    public String getTempNombreCategoria() { return tempNombreCategoria; }
+    public void setTempNombreCategoria(String tempNombreCategoria) { this.tempNombreCategoria = tempNombreCategoria; }
 }
+

@@ -2,6 +2,7 @@ package com.wokAsianF.demo.controller;
 
 import com.wokAsianF.demo.entity.Orden;
 import com.wokAsianF.demo.DTOs.OrdenDTO;
+import com.wokAsianF.demo.DTOs.OrdenInputDTO; 
 import com.wokAsianF.demo.DTOs.AgregarPlatilloDTO; 
 import com.wokAsianF.demo.service.OrdenService;
 import com.wokAsianF.demo.enums.EstadoOrden;
@@ -9,6 +10,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import java.util.Arrays;
+import java.util.stream.Collectors;
+import com.wokAsianF.demo.enums.EstadoPreparacion;
 
 @RestController
 @RequestMapping("/api/ordenes")
@@ -18,15 +22,23 @@ public class OrdenController {
     private OrdenService ordenService;
 
     @PostMapping
-    public ResponseEntity<Orden> crear(@RequestBody Orden orden) {
-        Orden nuevaOrden = ordenService.crear(orden);
+    public ResponseEntity<OrdenDTO> crear(@RequestBody OrdenInputDTO ordenInputDTO) {
+        OrdenDTO nuevaOrden = ordenService.crear(ordenInputDTO);
         return ResponseEntity.ok(nuevaOrden);
     }
 
     @GetMapping
     public ResponseEntity<List<OrdenDTO>> obtenerTodos(
-            @RequestParam(required = false) EstadoOrden estado) {
-        List<OrdenDTO> ordenes = ordenService.obtenerTodos(estado);
+            @RequestParam(required = false) String estados,
+            @RequestParam(required = false) Integer mesaId) {
+        List<EstadoOrden> listaEstados = null;
+        if (estados != null && !estados.isEmpty()) {
+            listaEstados = Arrays.stream(estados.split(","))
+                                 .map(String::trim)
+                                 .map(EstadoOrden::valueOf)
+                                 .collect(Collectors.toList());
+        }
+        List<OrdenDTO> ordenes = ordenService.obtenerTodos(listaEstados, mesaId);
         return ResponseEntity.ok(ordenes);
     }
 
@@ -62,9 +74,28 @@ public class OrdenController {
         return ResponseEntity.notFound().build();
     }
     
+    @PatchMapping("/{id}/estado")
+    public ResponseEntity<Void> actualizarEstado(@PathVariable Integer id, @RequestParam EstadoOrden nuevoEstado) {
+        if (ordenService.actualizarEstadoOrden(id, nuevoEstado)) {
+            return ResponseEntity.ok().build();
+        }
+        return ResponseEntity.badRequest().build();
+    }
+    
     @PostMapping("/{id}/platillos")
     public ResponseEntity<Void> agregarPlatillo(@PathVariable Integer id, @RequestBody AgregarPlatilloDTO dto) {
         if (ordenService.agregarPlatillo(id, dto)) {
+            return ResponseEntity.ok().build();
+        }
+        return ResponseEntity.badRequest().build();
+    }
+
+    @PatchMapping("/platillo/{ordenPlatilloId}/estado")
+    public ResponseEntity<Void> actualizarEstadoPlatillo(
+            @PathVariable Integer ordenPlatilloId,
+            @RequestParam EstadoPreparacion nuevoEstado,
+            @RequestParam(required = false) Integer cocineroId) {
+        if (ordenService.actualizarEstadoPlatilloOrden(ordenPlatilloId, nuevoEstado, cocineroId)) {
             return ResponseEntity.ok().build();
         }
         return ResponseEntity.badRequest().build();

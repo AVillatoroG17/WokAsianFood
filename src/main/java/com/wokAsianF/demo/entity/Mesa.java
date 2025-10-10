@@ -1,7 +1,12 @@
 package com.wokAsianF.demo.entity;
 
 import com.wokAsianF.demo.enums.UbicacionMesa;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "mesa")
@@ -10,17 +15,15 @@ public class Mesa {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "mesa_id")
     private Integer mesaId;
-    
+
     @Column(name = "numero_mesa", nullable = false, unique = true, length = 10)
     private String numeroMesa;
-    
+
     @Column(columnDefinition = "integer default 4")
     private Integer capacidad = 4;
-    
-@Enumerated(EnumType.STRING)
-    @Column(columnDefinition = "varchar default 'interior'")
+
     private UbicacionMesa ubicacion = UbicacionMesa.interior;
-    
+
     @Column(columnDefinition = "boolean default true")
     private Boolean activa = true;
 

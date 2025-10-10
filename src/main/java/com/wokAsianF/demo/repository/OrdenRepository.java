@@ -3,6 +3,8 @@ package com.wokAsianF.demo.repository;
 import com.wokAsianF.demo.entity.Orden;
 import com.wokAsianF.demo.enums.EstadoOrden;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import java.util.List;
 
@@ -10,4 +12,7 @@ import java.util.List;
 public interface OrdenRepository extends JpaRepository<Orden, Integer> {
     List<Orden> findByEstadoOrden(EstadoOrden estadoOrden);
     List<Orden> findByMesaMesaId(Integer mesaId);
+
+    @Query(value = "SELECT o FROM Orden o WHERE CAST(o.estadoOrden AS text) IN :#{#estados.![name()]}")
+    List<Orden> findByEstadoOrdenIn(@Param("estados") List<EstadoOrden> estados);
 }

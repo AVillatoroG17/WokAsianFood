@@ -29,7 +29,7 @@ public class PlatilloController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<PlatilloDTO> obtenerPorId(@PathVariable Integer id) {
+    public ResponseEntity<PlatilloDTO> obtenerPorId( @PathVariable Integer id) {
         return platilloService.obtenerPorId(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
