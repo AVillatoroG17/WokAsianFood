@@ -6,6 +6,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import com.wokAsianF.demo.DTOs.RegistroDTO;
 import com.wokAsianF.demo.DTOs.RegistroResponseDTO;
 import com.wokAsianF.demo.DTOs.UsuarioDTO;
@@ -15,8 +16,12 @@ import com.wokAsianF.demo.repository.UsuarioRepository;
 
 @Service
 public class UsuarioService {
+    
     @Autowired
     private UsuarioRepository usuarioRepository;
+    
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     public List<UsuarioDTO> obtenerTodos(RolUsuario rol) {
         List<Usuario> usuarios;
@@ -49,6 +54,7 @@ public class UsuarioService {
     }
 
     public Usuario crear(Usuario usuario) {
+        // Asegúrate de hashear la contraseña si se llama a este método con password plana
         usuario.setFechaCreacion(LocalDateTime.now());
         return usuarioRepository.save(usuario);
     }
@@ -56,6 +62,7 @@ public class UsuarioService {
     public RegistroResponseDTO registrar(RegistroDTO registroDTO) {
         RegistroResponseDTO response = new RegistroResponseDTO();
         
+        // --- Lógica de validación (sin cambios) ---
         if (registroDTO.getNombreUsuario() == null || registroDTO.getNombreUsuario().trim().isEmpty() ||
             registroDTO.getNombreCompleto() == null || registroDTO.getNombreCompleto().trim().isEmpty() ||
             registroDTO.getPassword() == null || registroDTO.getPassword().isEmpty() ||
@@ -72,33 +79,43 @@ public class UsuarioService {
             return response;
         }
         
-        Usuario existenteUsuario = usuarioRepository.findByNombreUsuario(registroDTO.getNombreUsuario());
-        if (existenteUsuario != null) {
+        // ----------------------------------------------------
+        // CORRECCIÓN LÍNEA 88: Usar isPresent() para validar existencia
+        // ----------------------------------------------------
+        if (usuarioRepository.findByNombreUsuario(registroDTO.getNombreUsuario()).isPresent()) {
             response.setExito(false);
             response.setMensaje("El nombre de usuario ya está en uso.");
             return response;
         }
         
         if (registroDTO.getEmail() != null && !registroDTO.getEmail().trim().isEmpty()) {
-            Usuario existenteEmail = usuarioRepository.findByEmail(registroDTO.getEmail());
-            if (existenteEmail != null) {
+            // ----------------------------------------------------
+            // CORRECCIÓN LÍNEA 96: Usar isPresent() para validar existencia
+            // ----------------------------------------------------
+            if (usuarioRepository.findByEmail(registroDTO.getEmail()).isPresent()) {
                 response.setExito(false);
                 response.setMensaje("El email ya está registrado.");
                 return response;
             }
         }
         
+        // --- Lógica de Creación del Usuario ---
         Usuario nuevoUsuario = new Usuario();
         nuevoUsuario.setNombreUsuario(registroDTO.getNombreUsuario());
         nuevoUsuario.setNombreCompleto(registroDTO.getNombreCompleto());
         nuevoUsuario.setEmail(registroDTO.getEmail());
-        nuevoUsuario.setPasswordHash(registroDTO.getPassword()); 
+        
+        // ENCRIPTAR LA CONTRASEÑA ANTES DE GUARDAR
+        String hashedPassword = passwordEncoder.encode(registroDTO.getPassword());
+        nuevoUsuario.setPasswordHash(hashedPassword); 
+        
         nuevoUsuario.setRol(registroDTO.getRol());
         nuevoUsuario.setFechaCreacion(LocalDateTime.now());
         nuevoUsuario.setActivo(true);
         
         Usuario usuarioGuardado = usuarioRepository.save(nuevoUsuario);
         
+        // ... (código de respuesta sin cambios) ...
         response.setExito(true);
         response.setMensaje("Usuario registrado exitosamente.");
         response.setUsuarioId(usuarioGuardado.getUsuarioId());
@@ -108,16 +125,21 @@ public class UsuarioService {
 
 
     public Usuario actualizar(Integer id, Usuario usuarioActualizado) {
+        // En este caso, findById ya devuelve Optional y se usa .map() que es la forma correcta
         return usuarioRepository.findById(id)
             .map(usuario -> {
                 usuario.setNombreUsuario(usuarioActualizado.getNombreUsuario());
                 usuario.setNombreCompleto(usuarioActualizado.getNombreCompleto());
                 usuario.setEmail(usuarioActualizado.getEmail());
-                usuario.setPasswordHash(usuarioActualizado.getPasswordHash());
+                
+                if (usuarioActualizado.getPasswordHash() != null && !usuarioActualizado.getPasswordHash().isEmpty()) {
+                     usuario.setPasswordHash(usuarioActualizado.getPasswordHash());
+                }
+
                 usuario.setRol(usuarioActualizado.getRol());
                 usuario.setActivo(usuarioActualizado.getActivo());
                 return usuarioRepository.save(usuario);
-            }).orElse(null);
+            }).orElse(null); // Retorna null si no se encuentra (se puede mejorar con Optional o Exception)
     }
 
     public boolean eliminar(Integer id) {

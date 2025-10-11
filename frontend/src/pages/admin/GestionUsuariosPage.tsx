@@ -1,31 +1,34 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/AuthContext'; // Importar el hook de autenticación real
 import { Navigate } from 'react-router-dom';
-import { UserPlus, Shield, User, ChefHat, Briefcase, Lock, Key, Trash2, Edit, AlertTriangle, X } from 'lucide-react';
+import { UserPlus, Shield, User, ChefHat, Briefcase, Lock, Key, Trash2, Edit, AlertTriangle, X, Loader2 } from 'lucide-react';
 
 // --- INTERFACES Y TIPOS ---
 interface IUsuario {
     usuarioId: number; nombreUsuario: string; nombreCompleto: string; email?: string;
-    rol: 'ADMIN' | 'MESERO' | 'COCINERO' | 'ENCARGADO';
+    rol: 'ADMIN' | 'MESERO' | 'COCINERO' | 'ENCARGADO'; // Aseguramos que el tipo de rol está en mayúsculas
     activo: boolean; fechaCreacion: string; ultimoAcceso?: string;
 }
 
-// Interfaz para forzar el tipado correcto de 'user' al usar el hook 'useAuth',
 interface AuthHookResult {
     user: IUsuario | null;
+    loading: boolean;
 }
 
-// TIPO CORREGIDO: Incluyendo campos de formulario que no son parte del modelo IUsuario
+// TIPO CORREGIDO
 type FormDataType = Partial<IUsuario> & { 
     claveMaestra?: string; 
     password?: string;
-    confirmPassword?: string; // <-- AÑADIDO: Para el campo de confirmación
-    [key: string]: any; // Permite cualquier otra clave temporal en el estado
+    confirmPassword?: string;
+    [key: string]: any; 
 };
 
 type ModalType = 'CREATE' | 'EDIT' | 'PASSWORD' | 'DELETE' | null;
 
-// --- SIMULACIÓN DE API (SIN CAMBIOS) ---
+// --- SIMULACIÓN DE API (MOCK) ---
+// ******************************************************
+// NOTA: ESTA ES LA SIMULACIÓN QUE DEBES REEMPLAZAR CON UNA LLAMADA A TU BACKEND REAL
+// ******************************************************
 let mockUsers: IUsuario[] = [
     { usuarioId: 1, nombreUsuario: 'admin', nombreCompleto: 'Admin General', rol: 'ADMIN', activo: true, fechaCreacion: '2023-01-01', ultimoAcceso: new Date().toISOString() },
     { usuarioId: 2, nombreUsuario: 'mesero', nombreCompleto: 'Carlos Gómez', rol: 'MESERO', activo: true, fechaCreacion: '2023-02-15' },
@@ -34,16 +37,17 @@ let mockUsers: IUsuario[] = [
 const MASTER_KEY = 'super-secret-key';
 
 const api = {
-    getUsuarios: async (): Promise<IUsuario[]> => Promise.resolve([...mockUsers]),
+    getUsuarios: async (): Promise<IUsuario[]> => {
+        // Simular un delay de API para propósitos de prueba
+        return new Promise(res => setTimeout(() => res([...mockUsers]), 500));
+    },
     createUsuario: async (data: any): Promise<any> => {
-        // En un caso real, aquí deberías validar si password === confirmPassword
         if (data.rol === 'ADMIN' && data.claveMaestra !== MASTER_KEY) {
             return Promise.reject({ error: "Clave maestra inválida.", codigo: "CLAVE_MAESTRA_INVALIDA" });
         }
         if (mockUsers.some(u => u.nombreUsuario === data.nombreUsuario)) {
             return Promise.reject({ error: `El usuario '${data.nombreUsuario}' ya existe.`, codigo: "USUARIO_DUPLICADO" });
         }
-        // Eliminamos confirmPassword y claveMaestra del objeto antes de crearlo en el mock
         const { confirmPassword, claveMaestra, ...userData } = data;
         const newUser: IUsuario = { usuarioId: Date.now(), ...userData, activo: true, fechaCreacion: new Date().toISOString(), rol: data.rol };
         mockUsers.push(newUser);
@@ -52,7 +56,6 @@ const api = {
     updateUsuario: async (id: number, data: any): Promise<IUsuario> => {
         const index = mockUsers.findIndex(u => u.usuarioId === id);
         if (index === -1) return Promise.reject("Usuario no encontrado.");
-        // Eliminamos campos no persistentes antes de actualizar
         const { confirmPassword, claveMaestra, password, ...updateData } = data;
         mockUsers[index] = { ...mockUsers[index], ...updateData };
         return Promise.resolve(mockUsers[index]);
@@ -66,6 +69,7 @@ const api = {
 // --- SUB-COMPONENTES Y MODALES ---
 
 const AlertMessage: React.FC<{ message: { text: string, type: 'error' | 'success' } | null, onClose: () => void }> = ({ message, onClose }) => {
+    // ... (código sin cambios)
     if (!message) return null;
     const isError = message.type === 'error';
     const bgColor = isError ? 'bg-red-600' : 'bg-green-600';
@@ -83,6 +87,7 @@ const AlertMessage: React.FC<{ message: { text: string, type: 'error' | 'success
 };
 
 const RoleBadge: React.FC<{ role: IUsuario['rol'] }> = ({ role }) => {
+    // ... (código sin cambios)
     const roleInfo = {
         ADMIN: { color: 'bg-red-500', icon: <Shield size={14}/> },
         MESERO: { color: 'bg-blue-500', icon: <User size={14}/> },
@@ -94,25 +99,28 @@ const RoleBadge: React.FC<{ role: IUsuario['rol'] }> = ({ role }) => {
 
 
 const UserFormModal: React.FC<{ userToEdit: IUsuario | null, allUsers: IUsuario[], onSave: (data: any) => void, onClose: () => void }> = ({ userToEdit, allUsers, onSave, onClose }) => {
-    // Usamos el tipo FormDataType corregido
     const [formData, setFormData] = useState<FormDataType>(userToEdit || { rol: 'MESERO' as IUsuario['rol'] });
     const [showMasterKey, setShowMasterKey] = useState(formData.rol === 'ADMIN');
+    
+    // ******************************************************
+    // CÓDIGO FALTANTE AÑADIDO: Cálculo de existencias de rol
+    // ******************************************************
+    const adminExists = useMemo(() => {
+        // Verifica si ya existe un ADMIN, excluyendo al usuario que se está editando
+        return allUsers.some(u => u.rol === 'ADMIN' && u.usuarioId !== userToEdit?.usuarioId);
+    }, [allUsers, userToEdit]);
 
-    // Lógica para deshabilitar roles que ya existen
-    const adminExists = useMemo(() => 
-        allUsers.some(u => u.rol === 'ADMIN' && u.usuarioId !== userToEdit?.usuarioId)
-    , [allUsers, userToEdit]);
-
-    const encargadoExists = useMemo(() => 
-        allUsers.some(u => u.rol === 'ENCARGADO' && u.usuarioId !== userToEdit?.usuarioId) 
-    , [allUsers, userToEdit]);
-
+    const encargadoExists = useMemo(() => {
+        // Verifica si ya existe un ENCARGADO, excluyendo al usuario que se está editando
+        return allUsers.some(u => u.rol === 'ENCARGADO' && u.usuarioId !== userToEdit?.usuarioId);
+    }, [allUsers, userToEdit]);
+    // ******************************************************
+    
     useEffect(() => {
-        // Asegura que showMasterKey se actualice si el rol cambia fuera del select
+        // Sincronizar la visibilidad de la clave maestra al cambiar el rol
         setShowMasterKey(formData.rol === 'ADMIN');
     }, [formData.rol]);
 
-    // FUNCIÓN CRÍTICA AÑADIDA/CORREGIDA: Maneja cambios en todos los inputs/selects.
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({
@@ -125,7 +133,6 @@ const UserFormModal: React.FC<{ userToEdit: IUsuario | null, allUsers: IUsuario[
         e.preventDefault();
         
         if (!userToEdit && formData.password !== formData.confirmPassword) {
-            // Manejo básico de error de contraseña (en un caso real, usarías un hook o estado de error)
             alert("Las contraseñas no coinciden.");
             return;
         }
@@ -140,66 +147,47 @@ const UserFormModal: React.FC<{ userToEdit: IUsuario | null, allUsers: IUsuario[
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     
-                    {/* Campos de Input: Todos usan handleChange */}
-                    <div>
-                        <label className="block font-medium">Nombre de Usuario</label>
-                        {/* Se asegura que el valor sea string para evitar errores */}
-                        <input type="text" name="nombreUsuario" value={formData.nombreUsuario || ''} onChange={handleChange} className="w-full p-2 border rounded" required disabled={!!userToEdit} />
-                    </div>
-                    <div>
-                        <label className="block font-medium">Nombre Completo</label>
-                        <input type="text" name="nombreCompleto" value={formData.nombreCompleto || ''} onChange={handleChange} className="w-full p-2 border rounded" required />
-                    </div>
-                    <div>
-                        <label className="block font-medium">Email (Opcional)</label>
-                        <input type="email" name="email" value={formData.email || ''} onChange={handleChange} className="w-full p-2 border rounded" />
-                    </div>
-                    
-                    {/* Campos de Contraseña (Solo para CREATE) */}
+                    {/* Campos Nombre de Usuario, Nombre Completo, Email */}
+                    <div><label className="block font-medium">Nombre de Usuario</label><input type="text" name="nombreUsuario" value={formData.nombreUsuario || ''} onChange={handleChange} className="w-full p-2 border rounded" required disabled={!!userToEdit}/></div>
+                    <div><label className="block font-medium">Nombre Completo</label><input type="text" name="nombreCompleto" value={formData.nombreCompleto || ''} onChange={handleChange} className="w-full p-2 border rounded" required/></div>
+                    <div><label className="block font-medium">Email (Opcional)</label><input type="email" name="email" value={formData.email || ''} onChange={handleChange} className="w-full p-2 border rounded"/></div>
+
+                    {/* Campos Contraseña (solo si es nuevo o para reseteo) */}
                     {!userToEdit && (
                         <>
-                            <div>
-                                <label className="block font-medium">Contraseña</label>
-                                <input type="password" name="password" value={formData.password || ''} onChange={handleChange} className="w-full p-2 border rounded" required />
-                            </div>
-                            <div>
-                                <label className="block font-medium">Confirmar Contraseña</label>
-                                <input type="password" name="confirmPassword" value={formData.confirmPassword || ''} onChange={handleChange} className="w-full p-2 border rounded" required />
-                                {/* Muestra un error si las contraseñas no coinciden (ejemplo básico) */}
-                                {formData.password && formData.confirmPassword && formData.password !== formData.confirmPassword && (
-                                    <p className="text-xs text-red-500 mt-1">Las contraseñas deben coincidir.</p>
-                                )}
-                            </div>
+                            <div><label className="block font-medium">Contraseña</label><input type="password" name="password" value={formData.password || ''} onChange={handleChange} className="w-full p-2 border rounded" required/></div>
+                            <div><label className="block font-medium">Confirmar Contraseña</label><input type="password" name="confirmPassword" value={formData.confirmPassword || ''} onChange={handleChange} className="w-full p-2 border rounded" required/></div>
                         </>
                     )}
-                    
-                    {/* Campo Rol: Usa handleChange para uniformidad */}
-                    <div>
-                        <label className="block font-medium">Rol</label>
-                        <select 
-                            name="rol" 
-                            value={formData.rol} 
-                            onChange={handleChange} // <-- CORREGIDO: Usando handleChange
-                            className="w-full p-2 border rounded"
-                        >
-                            <option value="MESERO">Mesero</option>
-                            <option value="COCINERO">Cocinero</option>
-                            <option value="ENCARGADO" disabled={encargadoExists && formData.rol !== 'ENCARGADO'}>Encargado de Inventario</option>
-                            <option value="ADMIN" disabled={adminExists && formData.rol !== 'ADMIN'}>Administrador</option>
-                        </select>
-                        {adminExists && formData.rol !== 'ADMIN' && <p className="text-xs text-gray-500 mt-1">Ya existe un Administrador.</p>}
-                        {encargadoExists && formData.rol !== 'ENCARGADO' && <p className="text-xs text-gray-500 mt-1">Ya existe un Encargado de Inventario.</p>}
-                    </div>
 
-                    {/* Campo Clave Maestra: Usa handleChange para uniformidad */}
+                    {/* Campo Rol (aquí es donde usas las nuevas variables) */}
+                    <div>
+                         <label className="block font-medium">Rol</label>
+                         <select 
+                             name="rol" 
+                             value={formData.rol} 
+                             onChange={handleChange}
+                             className="w-full p-2 border rounded"
+                         >
+                             <option value="MESERO">Mesero</option>
+                             <option value="COCINERO">Cocinero</option>
+                             <option value="ENCARGADO" disabled={encargadoExists && formData.rol !== 'ENCARGADO'}>Encargado de Inventario</option>
+                             <option value="ADMIN" disabled={adminExists && formData.rol !== 'ADMIN'}>Administrador</option>
+                         </select>
+                         {adminExists && formData.rol !== 'ADMIN' && <p className="text-xs text-red-500 mt-1">Ya existe un Administrador. Solo puede haber uno.</p>}
+                         {encargadoExists && formData.rol !== 'ENCARGADO' && <p className="text-xs text-red-500 mt-1">Ya existe un Encargado de Inventario. Solo puede haber uno.</p>}
+                    </div>
+                    
+                    {/* Clave Maestra */}
                     {showMasterKey && (
                         <div className="p-3 bg-yellow-100 border border-yellow-400 rounded-md">
                             <label className="font-bold">Clave Maestra de Administrador</label>
-                            {/* CORREGIDO: Usando handleChange */}
                             <input type="password" name="claveMaestra" onChange={handleChange} className="w-full p-2 border rounded mt-1" required/> 
                             <p className="text-xs text-yellow-800 mt-1">⚠️ Requerida para crear o asignar el rol de Administrador.</p>
                         </div>
                     )}
+                    
+                    {/* Botones */}
                     <div className="flex justify-end space-x-4 pt-4">
                         <button type="button" onClick={onClose} className="bg-gray-200 py-2 px-4 rounded-lg">Cancelar</button>
                         <button type="submit" className="bg-blue-600 text-white py-2 px-4 rounded-lg">Guardar</button>
@@ -210,17 +198,17 @@ const UserFormModal: React.FC<{ userToEdit: IUsuario | null, allUsers: IUsuario[
     );
 };
 
-// --- PÁGINA PRINCIPAL (SIN CAMBIOS FUNCIONALES MAYORES AQUÍ) ---
+// --- PÁGINA PRINCIPAL (GESTIÓN DE USUARIOS) ---
 const GestionUsuariosPage: React.FC = () => {
-    // Aplicamos la aserción de tipo para resolver el error "usuarioId no existe en User"
-    const { user: currentUser } = useAuth() as AuthHookResult;
+    // Usamos el hook real y destructuring con la aserción de tipo
+    const { user: currentUser, loading: authLoading } = useAuth() as AuthHookResult;
     const [users, setUsers] = useState<IUsuario[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [loadingData, setLoadingData] = useState(true);
     const [modal, setModal] = useState<{ type: ModalType, data: IUsuario | null }>({ type: null, data: null });
     const [message, setMessage] = useState<{ text: string, type: 'error' | 'success' } | null>(null);
 
     const fetchUsers = useCallback(async () => {
-        setLoading(true);
+        setLoadingData(true);
         try {
             const data = await api.getUsuarios();
             setUsers(data);
@@ -228,14 +216,18 @@ const GestionUsuariosPage: React.FC = () => {
             console.error("Error fetching users:", err);
             setMessage({ text: "Error al cargar la lista de usuarios.", type: 'error' });
         } finally {
-            setLoading(false);
+            setLoadingData(false);
         }
     }, []);
 
-    useEffect(() => { fetchUsers(); }, [fetchUsers]);
+    useEffect(() => { 
+        if (!authLoading && currentUser && currentUser.rol?.toUpperCase() === 'ADMIN') {
+            fetchUsers(); 
+        }
+    }, [fetchUsers, authLoading, currentUser]);
 
     const handleSave = async (data: any) => {
-        setMessage(null); // Clear previous message
+        setMessage(null); 
         try {
             if (modal.type === 'CREATE') {
                 await api.createUsuario(data);
@@ -245,7 +237,7 @@ const GestionUsuariosPage: React.FC = () => {
                 setMessage({ text: "Usuario actualizado exitosamente.", type: 'success' });
             }
             setModal({ type: null, data: null });
-            fetchUsers(); // Re-fetch para mostrar los cambios
+            fetchUsers(); 
         } catch (error: any) {
             console.error("Error al guardar usuario:", error);
             setMessage({ text: error.error || 'Ocurrió un error desconocido al guardar el usuario.', type: 'error' });
@@ -267,19 +259,22 @@ const GestionUsuariosPage: React.FC = () => {
         }
     };
     
-    if (currentUser && currentUser.rol?.trim() !== 'ADMIN') {
-        return <Navigate to="/unauthorized" replace />;
+    // CHECK DE AUTORIZACIÓN
+    if (authLoading) {
+        return (
+            <div className="flex justify-center items-center h-screen">
+                <Loader2 className="animate-spin w-12 h-12 text-blue-500" />
+                <p className="ml-4 text-gray-600">Verificando permisos...</p>
+            </div>
+        );
     }
 
-    if (!currentUser && loading) {
-           return (
-             <div className="flex justify-center items-center h-screen">
-                 <div className="flex flex-col items-center">
-                     <UserPlus className="animate-pulse w-16 h-16 text-blue-500 mb-4" />
-                     <p className="text-gray-600">Cargando permisos...</p>
-                 </div>
-             </div>
-         );
+    if (currentUser && currentUser.rol?.toUpperCase() !== 'ADMIN') {
+        return <Navigate to="/unauthorized" replace />;
+    }
+    
+    if (!currentUser) {
+        return <Navigate to="/login" replace />;
     }
 
     return (
@@ -293,7 +288,7 @@ const GestionUsuariosPage: React.FC = () => {
                 </button>
             </header>
             
-            {loading ? (
+            {loadingData ? ( 
                 <div className="flex justify-center items-center h-64">
                     <Lock className="animate-spin text-blue-600 w-12 h-12"/>
                 </div>
@@ -301,14 +296,14 @@ const GestionUsuariosPage: React.FC = () => {
                 <div className="bg-white shadow-xl rounded-xl overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-100">
-                            <tr>
-                                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Usuario</th>
-                                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider hidden sm:table-cell">Nombre Completo</th>
-                                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Rol</th>
-                                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider hidden md:table-cell">Email</th>
-                                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Estado</th>
-                                <th className="relative px-6 py-3"><span className="sr-only">Acciones</span></th>
-                            </tr>
+                             <tr>
+                                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Usuario</th>
+                                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider hidden sm:table-cell">Nombre Completo</th>
+                                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Rol</th>
+                                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider hidden md:table-cell">Email</th>
+                                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Estado</th>
+                                 <th className="relative px-6 py-3"><span className="sr-only">Acciones</span></th>
+                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
                             {users.map(user => (
@@ -344,6 +339,7 @@ const GestionUsuariosPage: React.FC = () => {
 
             {/* Renderizar Modales */}
             {(modal.type === 'CREATE' || modal.type === 'EDIT') && 
+                // Asegúrate de pasar 'allUsers' al modal
                 <UserFormModal userToEdit={modal.data} allUsers={users} onSave={handleSave} onClose={() => setModal({ type: null, data: null })} />
             }
 

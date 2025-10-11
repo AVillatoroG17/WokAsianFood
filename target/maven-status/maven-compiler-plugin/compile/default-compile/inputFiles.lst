@@ -1,8 +1,10 @@
+C:\Users\avill\Downloads\demo (2)\demo\src\main\java\com\wokAsianF\demo\config\SecurityConfig.java
 C:\Users\avill\Downloads\demo (2)\demo\src\main\java\com\wokAsianF\demo\config\UbicacionMesaConverter.java
 C:\Users\avill\Downloads\demo (2)\demo\src\main\java\com\wokAsianF\demo\config\WebConfig.java
 C:\Users\avill\Downloads\demo (2)\demo\src\main\java\com\wokAsianF\demo\controller\AuthController.java
 C:\Users\avill\Downloads\demo (2)\demo\src\main\java\com\wokAsianF\demo\controller\ClienteController.java
 C:\Users\avill\Downloads\demo (2)\demo\src\main\java\com\wokAsianF\demo\controller\CocinaController.java
+C:\Users\avill\Downloads\demo (2)\demo\src\main\java\com\wokAsianF\demo\controller\EstadisticasController.java
 C:\Users\avill\Downloads\demo (2)\demo\src\main\java\com\wokAsianF\demo\controller\MesaController.java
 C:\Users\avill\Downloads\demo (2)\demo\src\main\java\com\wokAsianF\demo\controller\OrdenController.java
 C:\Users\avill\Downloads\demo (2)\demo\src\main\java\com\wokAsianF\demo\controller\PlatilloController.java
@@ -10,6 +12,7 @@ C:\Users\avill\Downloads\demo (2)\demo\src\main\java\com\wokAsianF\demo\controll
 C:\Users\avill\Downloads\demo (2)\demo\src\main\java\com\wokAsianF\demo\DemoApplication.java
 C:\Users\avill\Downloads\demo (2)\demo\src\main\java\com\wokAsianF\demo\DTOs\AgregarPlatilloDTO.java
 C:\Users\avill\Downloads\demo (2)\demo\src\main\java\com\wokAsianF\demo\DTOs\ClienteDTO.java
+C:\Users\avill\Downloads\demo (2)\demo\src\main\java\com\wokAsianF\demo\DTOs\EstadisticasDTO.java
 C:\Users\avill\Downloads\demo (2)\demo\src\main\java\com\wokAsianF\demo\DTOs\LoginDTO.java
 C:\Users\avill\Downloads\demo (2)\demo\src\main\java\com\wokAsianF\demo\DTOs\LoginResponseDTO.java
 C:\Users\avill\Downloads\demo (2)\demo\src\main\java\com\wokAsianF\demo\DTOs\MesaDTO.java
@@ -47,10 +50,14 @@ C:\Users\avill\Downloads\demo (2)\demo\src\main\java\com\wokAsianF\demo\reposito
 C:\Users\avill\Downloads\demo (2)\demo\src\main\java\com\wokAsianF\demo\repository\PagoRepository.java
 C:\Users\avill\Downloads\demo (2)\demo\src\main\java\com\wokAsianF\demo\repository\PlatilloRepository.java
 C:\Users\avill\Downloads\demo (2)\demo\src\main\java\com\wokAsianF\demo\repository\UsuarioRepository.java
+C:\Users\avill\Downloads\demo (2)\demo\src\main\java\com\wokAsianF\demo\seguridad\jwt\JwtRequestFilter.java
 C:\Users\avill\Downloads\demo (2)\demo\src\main\java\com\wokAsianF\demo\service\AuthService.java
 C:\Users\avill\Downloads\demo (2)\demo\src\main\java\com\wokAsianF\demo\service\ClienteService.java
 C:\Users\avill\Downloads\demo (2)\demo\src\main\java\com\wokAsianF\demo\service\CocinaService.java
+C:\Users\avill\Downloads\demo (2)\demo\src\main\java\com\wokAsianF\demo\service\EstadisticasService.java
+C:\Users\avill\Downloads\demo (2)\demo\src\main\java\com\wokAsianF\demo\service\JwtService.java
 C:\Users\avill\Downloads\demo (2)\demo\src\main\java\com\wokAsianF\demo\service\MesaService.java
 C:\Users\avill\Downloads\demo (2)\demo\src\main\java\com\wokAsianF\demo\service\OrdenService.java
 C:\Users\avill\Downloads\demo (2)\demo\src\main\java\com\wokAsianF\demo\service\PlatilloService.java
+C:\Users\avill\Downloads\demo (2)\demo\src\main\java\com\wokAsianF\demo\service\UserDetailsServiceImpl.java
 C:\Users\avill\Downloads\demo (2)\demo\src\main\java\com\wokAsianF\demo\service\UsuarioService.java

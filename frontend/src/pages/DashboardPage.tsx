@@ -1,16 +1,13 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext'; // Importar el hook de autenticación
-import { Loader2 } from 'lucide-react'; // Asumiendo que Loader2 viene de lucide-react
+import { useAuth } from '../context/AuthContext';
+import { Loader2 } from 'lucide-react';
 
 const DashboardPage: React.FC = () => {
     const navigate = useNavigate();
-    // Obtener el estado de carga y la información del usuario
     const { user, loading } = useAuth(); 
 
     useEffect(() => {
-        // 1. Evitar la redirección mientras se está cargando (loading)
-        // 2. Si el loading termina y no hay usuario, redirigir a /login (esto es un fallback de seguridad)
         if (loading) {
             return;
         }
@@ -20,8 +17,13 @@ const DashboardPage: React.FC = () => {
             return;
         }
 
-        // Redirigir según el rol del usuario (usando un string en mayúsculas para coincidir con el backend)
-        switch (user.rol) {
+        // ******************************************************
+        // CAMBIO CLAVE: Convertir el rol a MAYÚSCULAS antes del switch
+        // ******************************************************
+        const userRolUpper = user.rol.toUpperCase();
+
+        // Redirigir según el rol del usuario
+        switch (userRolUpper) {
             case 'ADMIN':
                 navigate('/admin/estadisticas', { replace: true });
                 break;

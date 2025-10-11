@@ -9,6 +9,8 @@ private String nombreCompleto;
 private RolUsuario rol;
 private String mensaje;
 private Boolean exito;
+private String token; 
+
 public LoginResponseDTO() {}
 public Integer getUsuarioId() { return usuarioId; }
 public void setUsuarioId(Integer usuarioId) { this.usuarioId = usuarioId; }
@@ -22,4 +24,8 @@ public String getMensaje() { return mensaje; }
 public void setMensaje(String mensaje) { this.mensaje = mensaje; }
 public Boolean getExito() { return exito; }
 public void setExito(Boolean exito) { this.exito = exito; }
+
+public String getToken() { return token; }
+public void setToken(String token) { this.token = token; }
+
 }

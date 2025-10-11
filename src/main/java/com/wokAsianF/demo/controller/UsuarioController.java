@@ -2,15 +2,16 @@ package com.wokAsianF.demo.controller;
 
 import com.wokAsianF.demo.entity.Usuario;
 import com.wokAsianF.demo.DTOs.UsuarioDTO;
-import com.wokAsianF.demo.service.UsuarioService;
 import com.wokAsianF.demo.enums.RolUsuario;
+import com.wokAsianF.demo.service.UsuarioService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/usuarios")
+@CrossOrigin(origins = "http://localhost:5173")
+@RequestMapping("/api/v1/usuarios")
 public class UsuarioController {
 
     @Autowired
@@ -24,8 +25,16 @@ public class UsuarioController {
 
     @GetMapping
     public ResponseEntity<List<UsuarioDTO>> obtenerTodos(
-            @RequestParam(required = false) RolUsuario rol) {
-        List<UsuarioDTO> usuarios = usuarioService.obtenerTodos(rol);
+            @RequestParam(required = false) String rol) {
+        RolUsuario rolEnum = null;
+        if (rol != null && !rol.isEmpty()) {
+            try {
+                rolEnum = RolUsuario.valueOf(rol);
+            } catch (IllegalArgumentException e) {
+                // Si el rol no es válido, se enviará null y se traerán todos
+            }
+        }
+        List<UsuarioDTO> usuarios = usuarioService.obtenerTodos(rolEnum);
         return ResponseEntity.ok(usuarios);
     }
 

@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 import com.wokAsianF.demo.enums.EstadoPreparacion;
 
 @RestController
+@CrossOrigin(origins = "http://localhost:5173")
 @RequestMapping("/api/ordenes")
 public class OrdenController {
 

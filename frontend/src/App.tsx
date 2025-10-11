@@ -2,13 +2,12 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 
-// Importa todas las páginas y componentes necesarios
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import UnauthorizedPage from './pages/UnauthorizedPage';
 import EstadisticasPage from './pages/admin/EstadisticasPage';
 import RegisterPage from './pages/admin/RegisterPage';
-import GestionUsuariosPage from './pages/admin/GestionUsuariosPage'; // <-- AÑADIR IMPORTACIÓN
+import GestionUsuariosPage from './pages/admin/GestionUsuariosPage'; 
 import OrdenesPage from './pages/mesero/OrdenesPage';
 import PedidosPage from './pages/cocina/PedidosPage';
 import SuministrosPage from './pages/inventario/SuministrosPage';

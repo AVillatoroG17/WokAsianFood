@@ -11,8 +11,8 @@ com\wokAsianF\demo\DTOs\PlatilloCocinaDTO.class
 com\wokAsianF\demo\controller\MesaController.class
 com\wokAsianF\demo\repository\OrdenPlatilloRepository.class
 com\wokAsianF\demo\DTOs\LoginDTO.class
-com\wokAsianF\demo\controller\AuthController.class
 com\wokAsianF\demo\enums\EstadoOrden.class
+com\wokAsianF\demo\service\JwtService.class
 com\wokAsianF\demo\DTOs\ClienteDTO.class
 com\wokAsianF\demo\enums\TipoOrden.class
 com\wokAsianF\demo\controller\ClienteController.class
@@ -44,7 +44,6 @@ com\wokAsianF\demo\repository\OrdenRepository.class
 com\wokAsianF\demo\service\UsuarioService.class
 com\wokAsianF\demo\config\UbicacionMesaConverter.class
 com\wokAsianF\demo\DTOs\AgregarPlatilloDTO.class
-com\wokAsianF\demo\config\WebConfig.class
 com\wokAsianF\demo\DemoApplication.class
 com\wokAsianF\demo\service\MesaService.class
 com\wokAsianF\demo\entity\CategoriaPlatillo.class
@@ -53,5 +52,4 @@ com\wokAsianF\demo\entity\Usuario.class
 com\wokAsianF\demo\enums\MetodoPago.class
 com\wokAsianF\demo\repository\CategoriaPlatilloRepository.class
 com\wokAsianF\demo\service\PlatilloService.class
-com\wokAsianF\demo\config\WebConfig$1.class
 com\wokAsianF\demo\enums\TipoPago.class

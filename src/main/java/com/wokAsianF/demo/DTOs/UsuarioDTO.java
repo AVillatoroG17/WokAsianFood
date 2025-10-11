@@ -8,11 +8,13 @@ public class UsuarioDTO {
     private String nombreUsuario;
     private String nombreCompleto;
     private String email;
-    private RolUsuario rol;  
+    private RolUsuario rol;
     private Boolean activo;
     private LocalDateTime fechaCreacion;
     private LocalDateTime ultimoAcceso;
+
     public UsuarioDTO() {}
+
     public Integer getUsuarioId() { return usuarioId; }
     public void setUsuarioId(Integer usuarioId) { this.usuarioId = usuarioId; }
     public String getNombreUsuario() { return nombreUsuario; }

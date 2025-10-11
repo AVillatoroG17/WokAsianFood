@@ -1,6 +1,6 @@
 package com.wokAsianF.demo.controller;
 
-import com.wokAsianF.demo.DTOs.LoginDTO;
+import com.wokAsianF.demo.DTOs.LoginDTO;  
 import com.wokAsianF.demo.DTOs.LoginResponseDTO;
 import com.wokAsianF.demo.DTOs.RegistroDTO;
 import com.wokAsianF.demo.DTOs.RegistroResponseDTO;
@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
+@CrossOrigin(origins = "http://localhost:5173") 
 @RequestMapping("/api/auth")
 public class AuthController {
     
@@ -26,7 +27,7 @@ public class AuthController {
     }
     
     @PostMapping("/login")
-    public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginDTO loginDTO) {
+    public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginDTO loginDTO) {  
         LoginResponseDTO response = authService.autenticar(loginDTO);
         if (response.getExito()) {
             return ResponseEntity.ok(response);

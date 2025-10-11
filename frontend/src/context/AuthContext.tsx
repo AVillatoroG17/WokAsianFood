@@ -1,90 +1,119 @@
-import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
-import { decodeToken, isTokenExpired } from '../utils/jwt';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 
-// Define la estructura del usuario y el tipo del contexto
 interface User {
-   userId: number;
-   nombreUsuario: string;
-   nombreCompleto: string;
-   rol: 'ADMIN' | 'MESERO' | 'COCINERO' | 'ENCARGADO';
+    usuarioId: number;
+    nombreUsuario: string;
+    nombreCompleto: string;
+    rol: 'ADMIN' | 'MESERO' | 'COCINERO' | 'ENCARGADO' | string; 
+    activo: boolean; 
+    token: string;
 }
 
 interface AuthContextType {
-   isAuthenticated: boolean;
-   user: User | null;
-   login: (token: string) => void;
-   logout: () => void;
-   loading: boolean;
+    user: User | null;
+    token: string | null;
+    loading: boolean;
+    isAuthenticated: boolean; // ✅ AGREGAR ESTA LÍNEA
+    login: (nombreUsuario: string, password: string) => Promise<void>;
+    logout: () => void;
 }
 
-// Crea el contexto con un valor por defecto
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Define el componente Proveedor
-export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-   const [user, setUser] = useState<User | null>(null);
-   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-   const [loading, setLoading] = useState<boolean>(true);
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const [user, setUser] = useState<User | null>(null);
+    const [token, setToken] = useState<string | null>(null);
+    const [loading, setLoading] = useState(true);
 
-   useEffect(() => {
-      // Al montar, verifica el token en localStorage
-      try {
-         const token = localStorage.getItem('authToken');
-         if (token && !isTokenExpired(token)) {
-            const decoded = decodeToken(token);
-            setUser({
-               userId: decoded.userId,
-               nombreUsuario: decoded.username,
-               nombreCompleto: decoded.nombreCompleto,
-               rol: decoded.role, // Aquí se lee el rol del token
+    // ✅ AGREGAR ESTA LÍNEA - calcula si está autenticado
+    const isAuthenticated = !!user && !!token;
+
+    const login = async (nombreUsuario: string, password: string) => {
+        setLoading(true);
+
+        try {
+            const apiUrl = 'http://localhost:8080/api/auth/login'; 
+            
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nombreUsuario, password })
             });
-            setIsAuthenticated(true);
-         } else {
-            // Si el token no existe o es inválido, limpia el storage
-            localStorage.removeItem('authToken');
-         }
-      } catch (error) {
-         console.error("Error al procesar el token inicial:", error);
-         localStorage.removeItem('authToken');
-      } finally {
-         setLoading(false);
-      }
-   }, []);
 
-   const login = (token: string) => {
-      const decoded = decodeToken(token);
-      if (decoded && !isTokenExpired(token)) {
-         localStorage.setItem('authToken', token);
-         setUser({
-            userId: decoded.userId,
-            nombreUsuario: decoded.username,
-            nombreCompleto: decoded.nombreCompleto,
-            rol: decoded.role, // Aquí se asigna el rol del token
-         });
-         setIsAuthenticated(true);
-      } else {
-          console.error("Intento de login con token inválido o expirado.");
-      }
-   };
+            if (!response.ok) {
+                let errorMessage = 'Credenciales inválidas o error de servidor.';
+                try {
+                    const errorData = await response.json();
+                    errorMessage = errorData.mensaje || errorMessage;
+                } catch (e) {
+                    if (response.status === 401) {
+                         errorMessage = 'Usuario o contraseña incorrectos.';
+                    } else if (response.status === 403) {
+                         errorMessage = 'Acceso denegado. Faltan permisos.';
+                    } else if (response.status >= 500) {
+                        errorMessage = 'Error interno del servidor. Inténtalo más tarde.';
+                    }
+                }
+                throw new Error(errorMessage);
+            }
 
-   const logout = () => {
-      localStorage.removeItem('authToken');
-      setUser(null);
-      setIsAuthenticated(false);
-   };
+            const data = await response.json();
 
-   return (
-      <AuthContext.Provider value={{ isAuthenticated, user, login, logout, loading }}>
-         {children}
-      </AuthContext.Provider>
-   );
+            const loggedInUser: User = { 
+                usuarioId: data.usuarioId,
+                nombreUsuario: data.nombreUsuario,
+                nombreCompleto: data.nombreCompleto,
+                rol: data.rol ? data.rol.toUpperCase() : 'MESERO', 
+                activo: data.activo === undefined ? true : data.activo, 
+                token: data.token 
+            };
+            
+            setUser(loggedInUser);
+            setToken(loggedInUser.token);
+            localStorage.setItem('user', JSON.stringify(loggedInUser));
+            localStorage.setItem('token', loggedInUser.token);
+
+        } catch (err) {
+            console.error("Login failed:", err);
+            throw new Error((err as Error).message || 'Error de conexión con el servidor.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const logout = () => {
+        setUser(null);
+        setToken(null);
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+    };
+
+    useEffect(() => {
+        const storedUser = localStorage.getItem('user');
+        const storedToken = localStorage.getItem('token');
+
+        if (storedUser && storedToken) {
+            try {
+                setUser(JSON.parse(storedUser));
+                setToken(storedToken);
+            } catch (e) {
+                console.error("Error al parsear usuario de localStorage", e);
+                logout();
+            }
+        }
+        setLoading(false);
+    }, []);
+
+    // ✅ AGREGAR isAuthenticated al value
+    const value = { user, token, loading, isAuthenticated, login, logout };
+
+    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-// Hook personalizado para usar el contexto de autenticación
 export const useAuth = (): AuthContextType => {
-   const context = useContext(AuthContext);
-   if (context === undefined) {
-      throw new Error('useAuth debe ser usado dentro de un AuthProvider');
-   }
-   return context;
+    const context = useContext(AuthContext);
+    if (context === undefined) {
+        throw new Error('useAuth debe ser usado dentro de un AuthProvider');
+    }
+    return context;
 };
