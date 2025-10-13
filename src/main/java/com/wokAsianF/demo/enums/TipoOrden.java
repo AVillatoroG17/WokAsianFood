@@ -1,5 +1,7 @@
 package com.wokAsianF.demo.enums;
 
 public enum TipoOrden {
-    mesa, delivery, takeout
+    mesa,
+    para_llevar,
+    domicilio
 }

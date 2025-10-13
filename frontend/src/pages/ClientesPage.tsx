@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import api from '../services/api';
+import { createCliente, getClientes } from '../services/clienteService';
 import { ICliente } from '../models/ICliente';
 
 const ClientesPage: React.FC = () => {
@@ -18,14 +18,15 @@ const ClientesPage: React.FC = () => {
         e.preventDefault();
         setRegistroMessage(null);
         try {
-            const response = await api.post<ICliente>('/api/clientes', { nombre, telefono, email });
-            if (response.data) {
-                setRegistroMessage({ type: 'success', text: `Cliente '${response.data.nombre}' registrado con éxito!` });
+            const nuevoCliente = await createCliente({ nombre, telefono, email });
+            if (nuevoCliente) {
+                setRegistroMessage({ type: 'success', text: `Cliente '${nuevoCliente.nombre}' registrado con éxito!` });
                 setNombre('');
                 setTelefono('');
                 setEmail('');
             }
         } catch (err) {
+            console.error("Error al registrar cliente:", err);
             setRegistroMessage({ type: 'error', text: 'Error al registrar el cliente.' });
         }
     };
@@ -35,15 +36,14 @@ const ClientesPage: React.FC = () => {
         setClienteEncontrado(null);
         setBusquedaMessage(null);
         try {
-            // Nota: El endpoint original es /api/clientes?telefono=... 
-            // pero la descripción pide /api/clientes/buscar. Se usa el que funciona con el backend actual.
-            const response = await api.get<ICliente[]>(`/api/clientes?telefono=${telefonoBusqueda}`);
-            if (response.data && response.data.length > 0) {
-                setClienteEncontrado(response.data[0]); // Muestra el primer resultado
+            const clientes = await getClientes(telefonoBusqueda);
+            if (clientes && clientes.length > 0) {
+                setClienteEncontrado(clientes[0]); // Muestra el primer resultado
             } else {
                 setBusquedaMessage('No se encontró ningún cliente con ese teléfono.');
             }
         } catch (err) {
+            console.error("Error al buscar cliente:", err);
             setBusquedaMessage('Error al buscar el cliente.');
         }
     };

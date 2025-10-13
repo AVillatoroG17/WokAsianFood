@@ -1,6 +1,10 @@
 export interface ISuministro {
-    id: number;
+    suministroId: number;
     nombre: string;
-    cantidadStock: number;
+    categoria: string;
+    cantidad: number;
     unidadMedida: string;
+    precioUnitario: number;
+    stockMinimo: number;
+    fechaActualizacion?: string;
 }

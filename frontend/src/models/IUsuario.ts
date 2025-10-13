@@ -1,13 +1,10 @@
-export interface ILogin {
-    nombreUsuario: string;
-    password: string;
-}
-
-export interface ILoginResponse {
-    exito: boolean;
-    mensaje: string;
+export interface IUsuario {
     usuarioId: number;
     nombreUsuario: string;
     nombreCompleto: string;
-    rol: string;
+    email?: string;
+    rol: 'ADMIN' | 'MESERO' | 'COCINERO' | 'ENCARGADO';
+    activo: boolean;
+    fechaCreacion: string;
+    ultimoAcceso?: string;
 }

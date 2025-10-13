@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 
 import com.wokAsianF.demo.enums.EstadoPreparacion;
 import com.wokAsianF.demo.enums.Prioridad;
+import com.wokAsianF.demo.config.EstadoPreparacionConverter; // Importar el convertidor
 
 @Entity
 @Table(name = "orden_platillo")
@@ -32,7 +33,7 @@ public class OrdenPlatillo {
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal subtotal;
     
-    @Enumerated(EnumType.STRING)
+    @Convert(converter = EstadoPreparacionConverter.class) // <-- AÑADIR ESTA LÍNEA
     @Column(name = "estado_preparacion", columnDefinition = "varchar default 'pendiente'")
     private EstadoPreparacion estadoPreparacion = EstadoPreparacion.pendiente;
     
@@ -55,8 +56,8 @@ public class OrdenPlatillo {
     @Column(name = "notas_platillo", columnDefinition = "TEXT")
     private String notasPlatillo;
     
-    @Enumerated(EnumType.STRING)
-    @Column(name = "prioridad", columnDefinition = "varchar default 'normal'")
+    @Convert(converter = com.wokAsianF.demo.config.PrioridadConverter.class)
+    @Column(name = "prioridad")
     private Prioridad prioridad = Prioridad.normal;
 
     public OrdenPlatillo() {}

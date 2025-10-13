@@ -1,69 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { FaEdit, FaTrash, FaExclamationTriangle, FaPlus, FaSpinner } from 'react-icons/fa';
 
-// --- SIMULACIÓN DEL CONTEXTO DE AUTENTICACIÓN ---
-// En tu app, importa tu hook de autenticación real. ej: import { useAuth } from '../../context/AuthContext';
-const useAuth = () => {
-  // Cambia este valor para probar los diferentes roles: 'ADMINISTRADOR', 'ENCARGADO', 'COCINERO', 'MESERO'
-  const [role] = useState<'ADMINISTRADOR' | 'ENCARGADO' | 'COCINERO' | 'MESERO'>('ADMINISTRADOR');
-  return { user: { role } };
-};
+import { useAuth } from '../../context/AuthContext';
+
 // --- FIN DE LA SIMULACIÓN ---
 
-// --- INTERFAZ DEL SUMINISTRO ---
-interface ISuministro {
-  id: string;
-  nombre: string;
-  categoria: 'Vegetales' | 'Carnes' | 'Salsas' | 'Granos' | 'Bebidas' | 'Otros';
-  cantidad: number;
-  unidadMedida: 'kg' | 'g' | 'L' | 'ml' | 'unidades';
-  precioUnitario: number;
-  stockMinimo: number;
-  fechaActualizacion?: string;
-}
-
-// --- SIMULACIÓN DE LA CAPA DE API ---
-// En tu app, reemplaza esto con tus llamadas a la API usando axios.
-const mockSuministros: ISuministro[] = [
-  { id: '1', nombre: 'Arroz Jazmín', categoria: 'Granos', cantidad: 50, unidadMedida: 'kg', precioUnitario: 2.5, stockMinimo: 10, fechaActualizacion: '2023-10-27T10:00:00Z' },
-  { id: '2', nombre: 'Pechuga de Pollo', categoria: 'Carnes', cantidad: 8, unidadMedida: 'kg', precioUnitario: 7.0, stockMinimo: 15, fechaActualizacion: '2023-10-27T11:00:00Z' },
-  { id: '3', nombre: 'Salsa de Soja', categoria: 'Salsas', cantidad: 20, unidadMedida: 'L', precioUnitario: 4.0, stockMinimo: 5, fechaActualizacion: '2023-10-26T14:00:00Z' },
-  { id: '4', nombre: 'Cebolla', categoria: 'Vegetales', cantidad: 30, unidadMedida: 'kg', precioUnitario: 1.2, stockMinimo: 5, fechaActualizacion: '2023-10-27T09:00:00Z' },
-  { id: '5', nombre: 'Coca-Cola', categoria: 'Bebidas', cantidad: 100, unidadMedida: 'unidades', precioUnitario: 0.8, stockMinimo: 24, fechaActualizacion: '2023-10-25T18:00:00Z' },
-];
-
-const api = {
-  getSuministros: async (): Promise<ISuministro[]> => {
-    console.log('API GET: /api/suministros');
-    return new Promise(resolve => setTimeout(() => resolve([...mockSuministros]), 1000));
-  },
-  createSuministro: async (data: Omit<ISuministro, 'id'>): Promise<ISuministro> => {
-    console.log('API POST: /api/suministros', data);
-    const newSuministro: ISuministro = { ...data, id: Date.now().toString(), fechaActualizacion: new Date().toISOString() };
-    mockSuministros.push(newSuministro);
-    return new Promise(resolve => setTimeout(() => resolve(newSuministro), 500));
-  },
-  updateSuministro: async (id: string, data: Partial<ISuministro>): Promise<ISuministro> => {
-    console.log(`API PUT: /api/suministros/${id}`, data);
-    const index = mockSuministros.findIndex(s => s.id === id);
-    if (index !== -1) {
-      mockSuministros[index] = { ...mockSuministros[index], ...data, fechaActualizacion: new Date().toISOString() };
-      return new Promise(resolve => setTimeout(() => resolve(mockSuministros[index]), 500));
-    }
-    return Promise.reject('Suministro no encontrado');
-  },
-  deleteSuministro: async (id: string): Promise<void> => {
-    console.log(`API DELETE: /api/suministros/${id}`);
-    const index = mockSuministros.findIndex(s => s.id === id);
-    if (index !== -1) {
-      mockSuministros.splice(index, 1);
-      return new Promise(resolve => setTimeout(() => resolve(), 500));
-    }
-    return Promise.reject('Suministro no encontrado');
-  },
-};
-// --- FIN DE LA SIMULACIÓN DE API ---
-
+import { getSuministros, createSuministro, updateSuministro, deleteSuministro } from '../../services/suministroService';
+import { ISuministro } from '../../models/ISuministro';
 
 const SuministrosPage: React.FC = () => {
   const { user } = useAuth();
@@ -82,19 +25,19 @@ const SuministrosPage: React.FC = () => {
   const [alert, setAlert] = useState<{ type: 'success' | 'error', message: string } | null>(null);
 
   // Derivación de permisos a partir del rol
-  const hasWriteAccess = useMemo(() => user.role === 'ADMINISTRADOR' || user.role === 'ENCARGADO', [user.role]);
+  const hasWriteAccess = useMemo(() => user.rol === 'ADMIN' || user.rol === 'ENCARGADO', [user.rol]);
 
   useEffect(() => {
-    if (user.role === 'MESERO') {
+    if (user.rol === 'MESERO') {
       return;
     }
     fetchSuministros();
-  }, [user.role]);
+  }, [user.rol]);
 
   const fetchSuministros = async () => {
     try {
       setLoading(true);
-      const data = await api.getSuministros();
+      const data = await getSuministros();
       setSuministros(data);
     } catch (err) {
       setError('Error al cargar los suministros. Por favor, intente de nuevo.');
@@ -113,20 +56,20 @@ const SuministrosPage: React.FC = () => {
     setEditingSuministro(null);
   };
 
-  const handleSave = async (data: Omit<ISuministro, 'id'>) => {
+  const handleSave = async (data: Omit<ISuministro, 'suministroId' | 'fechaActualizacion'>) => {
     try {
       if (editingSuministro) {
-        const updated = await api.updateSuministro(editingSuministro.id, data);
-        setSuministros(suministros.map(s => s.id === updated.id ? updated : s));
+        const updated = await updateSuministro(editingSuministro.suministroId, data);
+        setSuministros(suministros.map(s => s.suministroId === updated.suministroId ? updated : s));
         setAlert({ type: 'success', message: 'Suministro actualizado correctamente.' });
       } else {
-        const created = await api.createSuministro(data);
+        const created = await createSuministro(data);
         setSuministros([...suministros, created]);
         setAlert({ type: 'success', message: 'Suministro creado correctamente.' });
       }
       handleCloseModal();
-    } catch (error) {
-      setAlert({ type: 'error', message: `Error al guardar: ${error}` });
+    } catch (error: any) {
+      setAlert({ type: 'error', message: `Error al guardar: ${error.message || error}` });
     }
     setTimeout(() => setAlert(null), 3000);
   };
@@ -139,11 +82,11 @@ const SuministrosPage: React.FC = () => {
   const handleConfirmDelete = async () => {
     if (!deletingSuministro) return;
     try {
-      await api.deleteSuministro(deletingSuministro.id);
-      setSuministros(suministros.filter(s => s.id !== deletingSuministro.id));
+      await deleteSuministro(deletingSuministro.suministroId);
+      setSuministros(suministros.filter(s => s.suministroId !== deletingSuministro.suministroId));
       setAlert({ type: 'success', message: 'Suministro eliminado correctamente.' });
-    } catch (error) {
-      setAlert({ type: 'error', message: `Error al eliminar: ${error}` });
+    } catch (error: any) {
+      setAlert({ type: 'error', message: `Error al eliminar: ${error.message || error}` });
     }
     setIsDeleteConfirmOpen(false);
     setDeletingSuministro(null);
@@ -217,7 +160,7 @@ const SuministrosPage: React.FC = () => {
               </thead>
               <tbody>
                 {filteredSuministros.map(s => (
-                  <tr key={s.id} className="bg-white border-b hover:bg-gray-50">
+                  <tr key={s.suministroId} className="bg-white border-b hover:bg-gray-50">
                     <td className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">{s.nombre}</td>
                     <td className="px-6 py-4">{s.categoria}</td>
                     <td className="px-6 py-4">
@@ -269,7 +212,7 @@ const SuministrosPage: React.FC = () => {
 interface SuministroFormModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (data: Omit<ISuministro, 'id'>) => void;
+  onSave: (data: Omit<ISuministro, 'suministroId' | 'fechaActualizacion'>) => void;
   suministro: ISuministro | null;
 }
 
@@ -294,7 +237,7 @@ const SuministroFormModal: React.FC<SuministroFormModalProps> = ({ isOpen, onClo
       alert('El nombre es requerido.');
       return;
     }
-    onSave(formData as Omit<ISuministro, 'id'>);
+    onSave(formData as Omit<ISuministro, 'suministroId' | 'fechaActualizacion'>);
   };
 
   if (!isOpen) return null;

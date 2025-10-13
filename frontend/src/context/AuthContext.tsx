@@ -13,7 +13,7 @@ interface AuthContextType {
     user: User | null;
     token: string | null;
     loading: boolean;
-    isAuthenticated: boolean; // ✅ AGREGAR ESTA LÍNEA
+    isAuthenticated: boolean; 
     login: (nombreUsuario: string, password: string) => Promise<void>;
     logout: () => void;
 }
@@ -25,7 +25,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [token, setToken] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
 
-    // ✅ AGREGAR ESTA LÍNEA - calcula si está autenticado
     const isAuthenticated = !!user && !!token;
 
     const login = async (nombreUsuario: string, password: string) => {
@@ -70,6 +69,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             
             setUser(loggedInUser);
             setToken(loggedInUser.token);
+            
+            // Guarda en localStorage
             localStorage.setItem('user', JSON.stringify(loggedInUser));
             localStorage.setItem('token', loggedInUser.token);
 
@@ -86,6 +87,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setToken(null);
         localStorage.removeItem('user');
         localStorage.removeItem('token');
+        localStorage.removeItem('userRole');
+        localStorage.removeItem('userId');
+        localStorage.removeItem('userName');
     };
 
     useEffect(() => {
@@ -94,7 +98,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         if (storedUser && storedToken) {
             try {
-                setUser(JSON.parse(storedUser));
+                const parsedUser = JSON.parse(storedUser);
+                setUser(parsedUser);
                 setToken(storedToken);
             } catch (e) {
                 console.error("Error al parsear usuario de localStorage", e);
@@ -104,7 +109,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setLoading(false);
     }, []);
 
-    // ✅ AGREGAR isAuthenticated al value
     const value = { user, token, loading, isAuthenticated, login, logout };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

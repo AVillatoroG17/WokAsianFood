@@ -25,46 +25,7 @@ type FormDataType = Partial<IUsuario> & {
 
 type ModalType = 'CREATE' | 'EDIT' | 'PASSWORD' | 'DELETE' | null;
 
-// --- SIMULACIÓN DE API (MOCK) ---
-// ******************************************************
-// NOTA: ESTA ES LA SIMULACIÓN QUE DEBES REEMPLAZAR CON UNA LLAMADA A TU BACKEND REAL
-// ******************************************************
-let mockUsers: IUsuario[] = [
-    { usuarioId: 1, nombreUsuario: 'admin', nombreCompleto: 'Admin General', rol: 'ADMIN', activo: true, fechaCreacion: '2023-01-01', ultimoAcceso: new Date().toISOString() },
-    { usuarioId: 2, nombreUsuario: 'mesero', nombreCompleto: 'Carlos Gómez', rol: 'MESERO', activo: true, fechaCreacion: '2023-02-15' },
-    { usuarioId: 3, nombreUsuario: 'cocinero', nombreCompleto: 'Ana Flores', rol: 'COCINERO', activo: false, fechaCreacion: '2023-03-20' },
-];
-const MASTER_KEY = 'super-secret-key';
-
-const api = {
-    getUsuarios: async (): Promise<IUsuario[]> => {
-        // Simular un delay de API para propósitos de prueba
-        return new Promise(res => setTimeout(() => res([...mockUsers]), 500));
-    },
-    createUsuario: async (data: any): Promise<any> => {
-        if (data.rol === 'ADMIN' && data.claveMaestra !== MASTER_KEY) {
-            return Promise.reject({ error: "Clave maestra inválida.", codigo: "CLAVE_MAESTRA_INVALIDA" });
-        }
-        if (mockUsers.some(u => u.nombreUsuario === data.nombreUsuario)) {
-            return Promise.reject({ error: `El usuario '${data.nombreUsuario}' ya existe.`, codigo: "USUARIO_DUPLICADO" });
-        }
-        const { confirmPassword, claveMaestra, ...userData } = data;
-        const newUser: IUsuario = { usuarioId: Date.now(), ...userData, activo: true, fechaCreacion: new Date().toISOString(), rol: data.rol };
-        mockUsers.push(newUser);
-        return Promise.resolve({ mensaje: "Usuario creado exitosamente", usuario: newUser });
-    },
-    updateUsuario: async (id: number, data: any): Promise<IUsuario> => {
-        const index = mockUsers.findIndex(u => u.usuarioId === id);
-        if (index === -1) return Promise.reject("Usuario no encontrado.");
-        const { confirmPassword, claveMaestra, password, ...updateData } = data;
-        mockUsers[index] = { ...mockUsers[index], ...updateData };
-        return Promise.resolve(mockUsers[index]);
-    },
-    deleteUsuario: async (id: number): Promise<void> => {
-        mockUsers = mockUsers.filter(u => u.usuarioId !== id);
-        return Promise.resolve();
-    }
-};
+import { getUsuarios, createUsuario, updateUsuario, deleteUsuario } from '../../services/usuarioService';
 
 // --- SUB-COMPONENTES Y MODALES ---
 
@@ -210,7 +171,7 @@ const GestionUsuariosPage: React.FC = () => {
     const fetchUsers = useCallback(async () => {
         setLoadingData(true);
         try {
-            const data = await api.getUsuarios();
+            const data = await getUsuarios();
             setUsers(data);
         } catch (err) {
             console.error("Error fetching users:", err);
@@ -230,17 +191,18 @@ const GestionUsuariosPage: React.FC = () => {
         setMessage(null); 
         try {
             if (modal.type === 'CREATE') {
-                await api.createUsuario(data);
+                await createUsuario(data);
                 setMessage({ text: "Usuario creado exitosamente.", type: 'success' });
             } else if (modal.type === 'EDIT' && modal.data) {
-                await api.updateUsuario(modal.data.usuarioId, data);
+                await updateUsuario(modal.data.usuarioId, data);
                 setMessage({ text: "Usuario actualizado exitosamente.", type: 'success' });
             }
             setModal({ type: null, data: null });
             fetchUsers(); 
         } catch (error: any) {
             console.error("Error al guardar usuario:", error);
-            setMessage({ text: error.error || 'Ocurrió un error desconocido al guardar el usuario.', type: 'error' });
+            const errorMessage = error.response?.data?.mensaje || error.message || 'Ocurrió un error desconocido.';
+            setMessage({ text: errorMessage, type: 'error' });
         }
     };
 
@@ -249,7 +211,7 @@ const GestionUsuariosPage: React.FC = () => {
         try {
             const confirmation = window.confirm(`¿Estás seguro de eliminar el usuario ${user.nombreUsuario}?`);
             if (confirmation) {
-                await api.deleteUsuario(user.usuarioId);
+                await deleteUsuario(user.usuarioId);
                 setMessage({ text: `Usuario ${user.nombreUsuario} eliminado.`, type: 'success' });
                 fetchUsers();
             }

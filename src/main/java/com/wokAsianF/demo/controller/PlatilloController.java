@@ -1,7 +1,7 @@
 package com.wokAsianF.demo.controller;
 
-import com.wokAsianF.demo.entity.Platillo;
 import com.wokAsianF.demo.DTOs.PlatilloDTO;
+import com.wokAsianF.demo.DTOs.PlatilloInputDTO;
 import com.wokAsianF.demo.service.PlatilloService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -17,8 +17,8 @@ public class PlatilloController {
     private PlatilloService platilloService;
 
     @PostMapping
-    public ResponseEntity<Platillo> crear(@RequestBody Platillo platillo) {
-        Platillo nuevoPlatillo = platilloService.crear(platillo);
+    public ResponseEntity<PlatilloDTO> crear(@RequestBody PlatilloInputDTO platilloInputDTO) {
+        PlatilloDTO nuevoPlatillo = platilloService.crear(platilloInputDTO);
         return ResponseEntity.ok(nuevoPlatillo);
     }
 
@@ -37,8 +37,8 @@ public class PlatilloController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Platillo> actualizar(@PathVariable Integer id, @RequestBody Platillo platillo) {
-        Platillo platilloActualizado = platilloService.actualizar(id, platillo);
+    public ResponseEntity<PlatilloDTO> actualizar(@PathVariable Integer id, @RequestBody PlatilloInputDTO platilloInputDTO) {
+        PlatilloDTO platilloActualizado = platilloService.actualizar(id, platilloInputDTO);
         if (platilloActualizado != null) {
             return ResponseEntity.ok(platilloActualizado);
         }

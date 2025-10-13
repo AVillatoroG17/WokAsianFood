@@ -1,51 +1,9 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Navigate } from 'react-router-dom';
-import { ChefHat, Clock, CheckCircle, Play, RefreshCw, MessageSquare } from 'lucide-react';
-
-// --- INTERFACES Y TIPOS ---
-interface IPlatilloCocina {
-    ordenPlatilloId: number; ordenId: number; numeroOrden: string; numeroMesa?: string;
-    nombrePlatillo: string; cantidad: number; nombreCategoria: string; colorCategoria?: string;
-    estadoPreparacion: 'pendiente' | 'en_preparacion' | 'listo';
-    prioridad: 'baja' | 'normal' | 'alta' | 'urgente';
-    tiempoPreparacionEstimado: number; horaEnvioCocina: string; horaInicioPreparacion?: string;
-    nombreCocinero?: string;
-    notasPlatillo?: string;
-}
-
-// --- SIMULACIÓN DE API ---
-let mockPlatillos: IPlatilloCocina[] = [
-    { ordenPlatilloId: 1, ordenId: 101, numeroOrden: 'ORD-001', numeroMesa: '5', nombrePlatillo: 'Ramen Tonkotsu', cantidad: 1,
-      nombreCategoria: 'Platos Fuertes', estadoPreparacion: 'pendiente', prioridad: 'normal', tiempoPreparacionEstimado: 15,
-      horaEnvioCocina: new Date(Date.now() - 3 * 60000).toISOString(), notasPlatillo: 'Extra picante' },
-    { ordenPlatilloId: 2, ordenId: 102, numeroOrden: 'ORD-002', numeroMesa: '3', nombrePlatillo: 'Gyoza de Cerdo', cantidad: 2,
-      nombreCategoria: 'Entradas', estadoPreparacion: 'en_preparacion', prioridad: 'alta', tiempoPreparacionEstimado: 10,
-      horaEnvioCocina: new Date(Date.now() - 5 * 60000).toISOString(), horaInicioPreparacion: new Date(Date.now() - 2 * 60000).
-      toISOString(), nombreCocinero: 'Ana' },
-    { ordenPlatilloId: 3, ordenId: 103, numeroOrden: 'ORD-003', numeroMesa: '8', nombrePlatillo: 'Té de Jazmín', cantidad: 1,
-      nombreCategoria: 'Bebidas', estadoPreparacion: 'listo', prioridad: 'baja', tiempoPreparacionEstimado: 3, horaEnvioCocina: new
-      Date(Date.now() - 8 * 60000).toISOString(), horaInicioPreparacion: new Date(Date.now() - 6 * 60000).toISOString(),
-      nombreCocinero: 'Ana' },
-];
-const api = {
-    getPlatillosCocina: async (): Promise<IPlatilloCocina[]> => {
-        return new Promise(res => setTimeout(() => res([...mockPlatillos]), 500));
-    },
-    updateEstadoPlatillo: async (id: number, nuevoEstado: string, cocineroId: number, cocineroNombre: string): Promise<
-        IPlatilloCocina> => {
-        const index = mockPlatillos.findIndex(p => p.ordenPlatilloId === id);
-        if (index !== -1) {
-            mockPlatillos[index].estadoPreparacion = nuevoEstado as any;
-            if (nuevoEstado === 'en_preparacion') {
-                mockPlatillos[index].horaInicioPreparacion = new Date().toISOString();
-                mockPlatillos[index].nombreCocinero = cocineroNombre;
-            }
-            return new Promise(res => setTimeout(() => res(mockPlatillos[index]), 300));
-        }
-        return Promise.reject('Platillo no encontrado');
-    }
-};
+import { Clock, CheckCircle, Play, RefreshCw, MessageSquare } from 'lucide-react';
+import { getPlatillosCocina, iniciarPreparacionPlatillo, marcarPlatilloListo } from '../../services/cocinaService';
+import { IPlatilloCocina } from '../../models/IPlatilloCocina';
 
 // --- HOOKS PERSONALIZADOS ---
 const useTimeAgo = (dateString: string) => {
@@ -117,7 +75,7 @@ const PedidosPage: React.FC = () => {
     const fetchPlatillos = useCallback(async () => {
         setLoading(true);
         try {
-            const data = await api.getPlatillosCocina();
+            const data = await getPlatillosCocina();
             setPlatillos(data);
         } catch (error) { console.error("Error fetching data", error); }
         finally { setLoading(false); }
@@ -126,20 +84,30 @@ const PedidosPage: React.FC = () => {
     useEffect(() => {
         if (user) {
             fetchPlatillos();
-            const intervalId = setInterval(fetchPlatillos, 20000);
+            const intervalId = setInterval(fetchPlatillos, 20000); // Real-time update
             return () => clearInterval(intervalId);
         }
     }, [fetchPlatillos, user]);
 
     const handleUpdateEstado = useCallback(async (id: number, nuevoEstado: 'en_preparacion' | 'listo') => {
-        const oldPlatillos = platillos;
-        setPlatillos(prev => prev.map(p => p.ordenPlatilloId === id ? { ...p, estadoPreparacion: nuevoEstado, nombreCocinero:
-    user!.nombreCompleto } : p));
+        const oldPlatillos = [...platillos];
+        
+        // Optimistic update
+        setPlatillos(prev => prev.map(p => 
+            p.ordenPlatilloId === id 
+                ? { ...p, estadoPreparacion: nuevoEstado, nombreCocinero: user!.nombreCompleto } 
+                : p
+        ));
+
         try {
-            await api.updateEstadoPlatillo(id, nuevoEstado, user!.userId, user!.nombreCompleto);
+            if (nuevoEstado === 'en_preparacion') {
+                await iniciarPreparacionPlatillo(id, user!.usuarioId);
+            } else {
+                await marcarPlatilloListo(id);
+            }
         } catch (error) {
-            console.error("Failed to update status, reverting...");
-            setPlatillos(oldPlatillos);
+            console.error("Failed to update status, reverting...", error);
+            setPlatillos(oldPlatillos); // Revert on error
         }
     }, [platillos, user]);
 

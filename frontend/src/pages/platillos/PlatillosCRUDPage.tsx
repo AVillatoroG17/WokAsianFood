@@ -16,36 +16,8 @@ interface IPlatillo {
     imagenUrl?: string;
 }
 
-// --- SIMULACIÓN DE API ---
-let mockPlatillos: IPlatillo[] = [
-    { platilloId: 1, nombrePlatillo: 'Ramen Tonkotsu', categoriaId: 1, nombreCategoria: 'Platos Fuertes', precioPlatillo: 18.00, tiempoPreparacion: 15, disponible: true, imagenUrl: 'https://placehold.co/150x150/5078FF/FFFFFF?text=Ramen' },
-    { platilloId: 2, nombrePlatillo: 'Gyoza de Cerdo', categoriaId: 2, nombreCategoria: 'Entradas', precioPlatillo: 8.00, tiempoPreparacion: 10, disponible: true, imagenUrl: 'https://placehold.co/150x150/66BB6A/FFFFFF?text=Gyoza' },
-    { platilloId: 3, nombrePlatillo: 'Mochi Ice Cream', categoriaId: 3, nombreCategoria: 'Postres', precioPlatillo: 6.00, tiempoPreparacion: 5, disponible: false, imagenUrl: 'https://placehold.co/150x150/FF8A65/FFFFFF?text=Mochi' },
-];
-
-const api = {
-    getPlatillos: async (): Promise<IPlatillo[]> => Promise.resolve([...mockPlatillos]),
-    createPlatillo: async (data: Omit<IPlatillo, 'platilloId' | 'nombreCategoria'>): Promise<IPlatillo> => {
-        // Simular nombre categoria - idealmente se buscaría en la BD
-        const newPlatillo: IPlatillo = { ...data, platilloId: Date.now(), nombreCategoria: 'Platos Fuertes' };
-        mockPlatillos.push(newPlatillo);
-        return Promise.resolve(newPlatillo);
-    },
-    updatePlatillo: async (id: number, data: Partial<IPlatillo>): Promise<IPlatillo> => {
-        const index = mockPlatillos.findIndex(p => p.platilloId === id);
-        if (index !== -1) {
-            mockPlatillos[index] = { ...mockPlatillos[index], ...data };
-            return Promise.resolve(mockPlatillos[index]);
-        }
-        return Promise.reject('Platillo no encontrado');
-    },
-    deletePlatillo: async (id: number): Promise<void> => {
-        mockPlatillos = mockPlatillos.filter(p => p.platilloId !== id);
-        return Promise.resolve();
-    }
-};
-
-// --- COMPONENTE DEL MODAL DE FORMULARIO ---
+import { getPlatillos, createPlatillo, updatePlatillo, deletePlatillo } from '../../services/platilloCRUDService';
+import { IPlatillo } from '../../models/IPlatillo';
 const PlatilloFormModal: React.FC<{ platillo: Partial<IPlatillo> | null, onSave: (data: any) => void, onClose: () => void }> = ({ platillo, onSave, onClose }) => {
     const [formData, setFormData] = useState(platillo || { nombrePlatillo: '', categoriaId: 1, precioPlatillo: 0, tiempoPreparacion: 0, disponible: true, descripcion: '', imagenUrl: '' });
 
@@ -69,8 +41,8 @@ const PlatilloFormModal: React.FC<{ platillo: Partial<IPlatillo> | null, onSave:
                     <textarea name="descripcion" value={formData.descripcion} onChange={handleChange} placeholder="Descripción breve" className="w-full p-3 border border-gray-300 rounded-lg resize-none focus:ring-blue-500 focus:border-blue-500 transition duration-150 h-24" />
                     
                     <div className="grid grid-cols-2 gap-4">
-                        <input name="precioPlatillo" type="number" min="0" step="0.01" value={formData.precioPlatillo} onChange={handleChange} placeholder="Precio (Q)" className="w-full p-3 border border-gray-300 rounded-lg" required />
-                        <input name="tiempoPreparacion" type="number" min="0" value={formData.tiempoPreparacion} onChange={handleChange} placeholder="Tiempo Prep. (min)" className="w-full p-3 border border-gray-300 rounded-lg" required />
+                        <input name="precioPlatillo" type="number" min="0" step="0.01" value={formData.precioPlatillo === 0 ? '' : formData.precioPlatillo} onChange={handleChange} placeholder="Precio (Q)" className="w-full p-3 border border-gray-300 rounded-lg" required />
+                        <input name="tiempoPreparacion" type="number" min="0" value={formData.tiempoPreparacion === 0 ? '' : formData.tiempoPreparacion} onChange={handleChange} placeholder="Tiempo Prep. (min)" className="w-full p-3 border border-gray-300 rounded-lg" required />
                     </div>
 
                     <input name="imagenUrl" value={formData.imagenUrl} onChange={handleChange} placeholder="URL de la Imagen (Opcional)" className="w-full p-3 border border-gray-300 rounded-lg" />
@@ -117,7 +89,7 @@ const PlatillosCRUDPage: React.FC = () => {
     const [platilloToDelete, setPlatilloToDelete] = useState<IPlatillo | null>(null); // Nuevo estado para la confirmación
 
     useEffect(() => {
-        api.getPlatillos().then(data => {
+        getPlatillos().then(data => {
             setPlatillos(data);
             setLoading(false);
         }).catch(error => {
@@ -134,10 +106,10 @@ const PlatillosCRUDPage: React.FC = () => {
     const handleSave = async (data: Omit<IPlatillo, 'platilloId' | 'nombreCategoria'>) => {
         try {
             if (editingPlatillo) {
-                const updated = await api.updatePlatillo(editingPlatillo.platilloId, data);
+                const updated = await updatePlatillo(editingPlatillo.platilloId, data);
                 setPlatillos(platillos.map(p => p.platilloId === updated.platilloId ? updated : p));
             } else {
-                const created = await api.createPlatillo(data);
+                const created = await createPlatillo(data);
                 setPlatillos([...platillos, created]);
             }
             setIsModalOpen(false);
@@ -151,7 +123,7 @@ const PlatillosCRUDPage: React.FC = () => {
     const handleDelete = async (id: number) => {
         try {
             setPlatilloToDelete(null); // Cerrar el mensaje de confirmación
-            await api.deletePlatillo(id);
+            await deletePlatillo(id);
             setPlatillos(platillos.filter(p => p.platilloId !== id));
         } catch (error) {
             console.error("Error al eliminar platillo:", error);

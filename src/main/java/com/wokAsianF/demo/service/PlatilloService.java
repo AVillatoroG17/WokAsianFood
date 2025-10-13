@@ -5,6 +5,7 @@ import com.wokAsianF.demo.entity.CategoriaPlatillo;
 import com.wokAsianF.demo.repository.PlatilloRepository;
 import com.wokAsianF.demo.repository.CategoriaPlatilloRepository;
 import com.wokAsianF.demo.DTOs.PlatilloDTO;
+import com.wokAsianF.demo.DTOs.PlatilloInputDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.List;
@@ -49,56 +50,42 @@ public class PlatilloService {
         return dto;
     }
 
-    public Platillo crear(Platillo platillo) {
-        // Si el ID es 0, significa que es una nueva entidad y debe ser generado por la DB.
-        // Establecerlo a null asegura que Hibernate lo trate como tal.
-        if (platillo.getPlatilloId() != null && platillo.getPlatilloId() == 0) {
-            platillo.setPlatilloId(null);
-        }
-        
-        // Manejar la asociación con CategoriaPlatillo
-        if (platillo.getTempNombreCategoria() != null && !platillo.getTempNombreCategoria().isEmpty()) {
-            CategoriaPlatillo categoria = categoriaPlatilloRepository.findByNombreCategoria(platillo.getTempNombreCategoria());
-            if (categoria == null) {
-                // Si la categoría no existe, crear una nueva
-                categoria = new CategoriaPlatillo();
-                categoria.setNombreCategoria(platillo.getTempNombreCategoria());
-                categoriaPlatilloRepository.save(categoria);
-            }
-            platillo.setCategoria(categoria);
-        } else {
-            // Si no se proporciona categoría, o es nula, lanzar excepción o manejar según la lógica de negocio
-            // Por ahora, lanzaremos una excepción ya que la categoría es nullable = false
-            throw new IllegalArgumentException("La categoría del platillo no puede ser nula.");
-        }
+    public PlatilloDTO crear(PlatilloInputDTO platilloInputDTO) {
+        Platillo platillo = new Platillo();
+        // Asignar propiedades del DTO a la entidad
+        platillo.setNombrePlatillo(platilloInputDTO.getNombrePlatillo());
+        platillo.setPrecioPlatillo(platilloInputDTO.getPrecioPlatillo());
+        platillo.setTiempoPreparacion(platilloInputDTO.getTiempoPreparacion());
+        platillo.setDisponible(platilloInputDTO.getDisponible());
+        platillo.setDescripcion(platilloInputDTO.getDescripcion());
+        platillo.setImagenUrl(platilloInputDTO.getImagenUrl());
+        platillo.setIngredientesDescripcion(platilloInputDTO.getIngredientesDescripcion());
 
-        return platilloRepository.save(platillo);
+        // Buscar y asignar la categoría
+        CategoriaPlatillo categoria = categoriaPlatilloRepository.findById(platilloInputDTO.getCategoriaId())
+                .orElseThrow(() -> new IllegalArgumentException("Categoría no encontrada con ID: " + platilloInputDTO.getCategoriaId()));
+        platillo.setCategoria(categoria);
+
+        Platillo nuevoPlatillo = platilloRepository.save(platillo);
+        return convertirAPlatilloDTO(nuevoPlatillo);
     }
 
-    public Platillo actualizar(Integer id, Platillo platilloActualizado) {
+    public PlatilloDTO actualizar(Integer id, PlatilloInputDTO platilloInputDTO) {
         return platilloRepository.findById(id)
             .map(platillo -> {
-                platillo.setNombrePlatillo(platilloActualizado.getNombrePlatillo());
-                // Manejar la asociación con CategoriaPlatillo para la actualización
-                if (platilloActualizado.getTempNombreCategoria() != null && !platilloActualizado.getTempNombreCategoria().isEmpty()) {
-                    CategoriaPlatillo categoria = categoriaPlatilloRepository.findByNombreCategoria(platilloActualizado.getTempNombreCategoria());
-                    if (categoria == null) {
-                        categoria = new CategoriaPlatillo();
-                        categoria.setNombreCategoria(platilloActualizado.getTempNombreCategoria());
-                        categoriaPlatilloRepository.save(categoria);
-                    }
-                    platillo.setCategoria(categoria);
-                } else {
-                    throw new IllegalArgumentException("La categoría del platillo no puede ser nula.");
-                }
+                platillo.setNombrePlatillo(platilloInputDTO.getNombrePlatillo());
+                // Buscar y asignar la categoría
+                CategoriaPlatillo categoria = categoriaPlatilloRepository.findById(platilloInputDTO.getCategoriaId())
+                        .orElseThrow(() -> new IllegalArgumentException("Categoría no encontrada con ID: " + platilloInputDTO.getCategoriaId()));
+                platillo.setCategoria(categoria);
 
-                platillo.setPrecioPlatillo(platilloActualizado.getPrecioPlatillo());
-                platillo.setTiempoPreparacion(platilloActualizado.getTiempoPreparacion());
-                platillo.setDisponible(platilloActualizado.getDisponible());
-                platillo.setDescripcion(platilloActualizado.getDescripcion());
-                platillo.setImagenUrl(platilloActualizado.getImagenUrl());
-                platillo.setIngredientesDescripcion(platilloActualizado.getIngredientesDescripcion());
-                return platilloRepository.save(platillo);
+                platillo.setPrecioPlatillo(platilloInputDTO.getPrecioPlatillo());
+                platillo.setTiempoPreparacion(platilloInputDTO.getTiempoPreparacion());
+                platillo.setDisponible(platilloInputDTO.getDisponible());
+                platillo.setDescripcion(platilloInputDTO.getDescripcion());
+                platillo.setImagenUrl(platilloInputDTO.getImagenUrl());
+                platillo.setIngredientesDescripcion(platilloInputDTO.getIngredientesDescripcion());
+                return convertirAPlatilloDTO(platilloRepository.save(platillo));
             }).orElse(null);
     }
 

@@ -111,6 +111,11 @@ public class OrdenService {
  @Transactional
 public OrdenDTO crear(OrdenInputDTO ordenInputDTO) {
     Orden nuevaOrden = new Orden();
+    
+    // Generar y asignar número de orden ANTES de guardar
+    String numeroDeOrden = "ORD-" + System.currentTimeMillis();
+    nuevaOrden.setNumeroOrden(numeroDeOrden);
+
     nuevaOrden.setFechaOrden(LocalDateTime.now());
     nuevaOrden.setTipoOrden(ordenInputDTO.getTipoOrden());
     nuevaOrden.setEstadoOrden(EstadoOrden.abierta); 

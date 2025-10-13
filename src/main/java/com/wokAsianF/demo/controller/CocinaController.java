@@ -13,6 +13,13 @@ import java.util.List;
 public class CocinaController {
 @Autowired
 private CocinaService cocinaService;
+
+@GetMapping("/platillos")
+public ResponseEntity<List<PlatilloCocinaDTO>> obtenerTodosLosPlatillosParaCocina() {
+    List<PlatilloCocinaDTO> platillos = cocinaService.obtenerTodosLosPlatillosParaCocina();
+    return ResponseEntity.ok(platillos);
+}
+
 @GetMapping("/pendientes")
 public ResponseEntity<List<PlatilloCocinaDTO>> obtenerPlatillosPendientes() {
 List<PlatilloCocinaDTO> platillos = cocinaService.obtenerPlatillosPendientes();

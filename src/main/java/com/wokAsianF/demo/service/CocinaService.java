@@ -1,6 +1,5 @@
 package com.wokAsianF.demo.service;
 
-
 import com.wokAsianF.demo.entity.OrdenPlatillo;
 import com.wokAsianF.demo.entity.Usuario;
 import com.wokAsianF.demo.repository.OrdenPlatilloRepository;
@@ -14,18 +13,29 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
 @Service
 public class CocinaService {
-@Autowired
-private OrdenPlatilloRepository ordenPlatilloRepository;
-@Autowired
-private UsuarioRepository usuarioRepository;
-public List<PlatilloCocinaDTO> obtenerPlatillosPendientes() {
+    @Autowired
+    private OrdenPlatilloRepository ordenPlatilloRepository;
+    @Autowired
+    private UsuarioRepository usuarioRepository;
+
+    public List<PlatilloCocinaDTO> obtenerPlatillosPendientes() {
 List<OrdenPlatillo> platillos = ordenPlatilloRepository.findByEstadoPreparacion(EstadoPreparacion.pendiente);
 return platillos.stream()
 .map(this::convertirAPlatilloCocinaDTO)
 .collect(Collectors.toList());
 }
+
+public List<PlatilloCocinaDTO> obtenerTodosLosPlatillosParaCocina() {
+    List<EstadoPreparacion> estados = List.of(EstadoPreparacion.pendiente, EstadoPreparacion.en_cocina, EstadoPreparacion.listo);
+    List<OrdenPlatillo> platillos = ordenPlatilloRepository.findByEstadoPreparacionIn(estados);
+    return platillos.stream()
+            .map(this::convertirAPlatilloCocinaDTO)
+            .collect(Collectors.toList());
+}
+
 public List<PlatilloCocinaDTO> obtenerMisPlatillos(Integer cocineroId) {
 List<OrdenPlatillo> platillos = ordenPlatilloRepository.findByCocineroAsignado_UsuarioIdAndEstadoPreparacion(
 cocineroId, EstadoPreparacion.en_cocina);
@@ -59,7 +69,7 @@ return false;
 OrdenPlatillo platillo = platilloOpt.get();
 Usuario cocinero = cocineroOpt.get();
 
-if (cocinero.getRol() != RolUsuario.cocinero) {
+if (cocinero.getRol() != RolUsuario.COCINERO) {
 return false;
 }
 if (platillo.getEstadoPreparacion() != EstadoPreparacion.pendiente) {
