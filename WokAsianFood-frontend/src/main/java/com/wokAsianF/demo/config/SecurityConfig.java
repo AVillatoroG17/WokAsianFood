@@ -44,11 +44,9 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173"));
-        // ✅ AGREGADO PATCH que faltaba
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
-
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
@@ -66,39 +64,46 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
 
-                        // Cocina
                         .requestMatchers("/api/cocina/**", "/cocina/**")
                         .hasAnyAuthority("ROLE_COCINERO", "ROLE_ADMIN")
 
-                        // ✅ Órdenes - CORREGIDO: Agregados PATCH y orden específico
                         .requestMatchers(HttpMethod.POST, "/api/ordenes", "/api/ordenes/**").permitAll()
-                        
+
+                        .requestMatchers(HttpMethod.POST, "/api/ordenes", "/api/ordenes/**")
+                        .hasAnyAuthority("ROLE_MESERO", "ROLE_ADMIN")
+
                         .requestMatchers(HttpMethod.GET, "/api/ordenes", "/api/ordenes/**")
                         .hasAnyAuthority("ROLE_MESERO", "ROLE_ADMIN", "ROLE_COCINERO")
-                        
+
                         .requestMatchers(HttpMethod.PUT, "/api/ordenes/**")
                         .hasAnyAuthority("ROLE_MESERO", "ROLE_ADMIN")
-                        
+
+                        .requestMatchers(HttpMethod.PATCH, "/api/ordenes/**")
+                        .hasAnyAuthority("ROLE_MESERO", "ROLE_ADMIN", "ROLE_COCINERO")
+
+                        .requestMatchers(HttpMethod.DELETE, "/api/ordenes/**")
+                        .hasAuthority("ROLE_ADMIN")
+
                         // ✅ AGREGADO: PATCH para actualizar estados
                         .requestMatchers(HttpMethod.PATCH, "/api/ordenes/**")
                         .hasAnyAuthority("ROLE_MESERO", "ROLE_ADMIN", "ROLE_COCINERO")
-                        
+
                         .requestMatchers(HttpMethod.DELETE, "/api/ordenes/**")
                         .hasAnyAuthority("ROLE_ADMIN")
 
                         // Platillos - ✅ Permitir GET para todos los roles que lo necesiten
                         .requestMatchers(HttpMethod.GET, "/api/platillos", "/api/platillos/**")
                         .hasAnyAuthority("ROLE_MESERO", "ROLE_ADMIN", "ROLE_COCINERO")
-                        
+
                         .requestMatchers(HttpMethod.POST, "/api/platillos")
                         .hasAuthority("ROLE_ADMIN")
-                        
+
                         .requestMatchers(HttpMethod.PUT, "/api/platillos/**")
                         .hasAuthority("ROLE_ADMIN")
-                        
+
                         .requestMatchers(HttpMethod.PATCH, "/api/platillos/**")
                         .hasAuthority("ROLE_ADMIN")
-                        
+
                         .requestMatchers(HttpMethod.DELETE, "/api/platillos/**")
                         .hasAuthority("ROLE_ADMIN")
 

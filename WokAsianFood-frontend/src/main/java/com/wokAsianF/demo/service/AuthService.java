@@ -33,9 +33,9 @@ public class AuthService {
         LoginResponseDTO response = new LoginResponseDTO();
 
         Usuario usuario = usuarioRepository.findByNombreUsuario(loginDTO.getNombreUsuario())
-            .orElseThrow(() -> {
-                throw new UsernameNotFoundException("Usuario no encontrado.");
-            });
+                .orElseThrow(() -> {
+                    throw new UsernameNotFoundException("Usuario no encontrado.");
+                });
 
         if (!usuario.getActivo()) {
             response.setExito(false);
@@ -50,11 +50,10 @@ public class AuthService {
         }
 
         String token = jwtService.generateToken(
-            usuario.getUsuarioId(),
-            usuario.getNombreUsuario(),
-            usuario.getNombreCompleto(),
-            usuario.getRol().name()
-        );
+                usuario.getUsuarioId(),
+                usuario.getNombreUsuario(),
+                usuario.getNombreCompleto(),
+                usuario.getRol().name());
 
         usuario.setUltimoAcceso(LocalDateTime.now());
         usuarioRepository.save(usuario);

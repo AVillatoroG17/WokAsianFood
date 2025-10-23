@@ -2,12 +2,14 @@ package com.wokAsianF.demo.controller;
 
 import com.wokAsianF.demo.entity.Orden;
 import com.wokAsianF.demo.DTOs.OrdenDTO;
-import com.wokAsianF.demo.DTOs.OrdenInputDTO; 
-import com.wokAsianF.demo.DTOs.AgregarPlatilloDTO; 
+import com.wokAsianF.demo.DTOs.OrdenInputDTO;
+import com.wokAsianF.demo.DTOs.AgregarPlatilloDTO;
 import com.wokAsianF.demo.service.OrdenService;
 import com.wokAsianF.demo.enums.EstadoOrden;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Arrays;
@@ -24,6 +26,12 @@ public class OrdenController {
 
     @PostMapping
     public ResponseEntity<OrdenDTO> crear(@RequestBody OrdenInputDTO ordenInputDTO) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        System.out.println("🔐 Usuario autenticado: " + (auth != null ? auth.getName() : "NULL"));
+        System.out.println("🎭 Authorities: " + (auth != null ? auth.getAuthorities() : "NULL"));
+        System.out.println("📦 Orden recibida para mesa ID: " + ordenInputDTO.getMesaId());
+        System.out.println("👤 Mesero ID: " + ordenInputDTO.getMeseroId());
+
         OrdenDTO nuevaOrden = ordenService.crear(ordenInputDTO);
         return ResponseEntity.ok(nuevaOrden);
     }
@@ -35,9 +43,9 @@ public class OrdenController {
         List<EstadoOrden> listaEstados = null;
         if (estados != null && !estados.isEmpty()) {
             listaEstados = Arrays.stream(estados.split(","))
-                                 .map(String::trim)
-                                 .map(EstadoOrden::valueOf)
-                                 .collect(Collectors.toList());
+                    .map(String::trim)
+                    .map(EstadoOrden::valueOf)
+                    .collect(Collectors.toList());
         }
         List<OrdenDTO> ordenes = ordenService.obtenerTodos(listaEstados, mesaId);
         return ResponseEntity.ok(ordenes);
@@ -74,7 +82,7 @@ public class OrdenController {
         }
         return ResponseEntity.notFound().build();
     }
-    
+
     @PatchMapping("/{id}/estado")
     public ResponseEntity<Void> actualizarEstado(@PathVariable Integer id, @RequestParam EstadoOrden nuevoEstado) {
         if (ordenService.actualizarEstadoOrden(id, nuevoEstado)) {
@@ -82,7 +90,7 @@ public class OrdenController {
         }
         return ResponseEntity.badRequest().build();
     }
-    
+
     @PostMapping("/{id}/platillos")
     public ResponseEntity<Void> agregarPlatillo(@PathVariable Integer id, @RequestBody AgregarPlatilloDTO dto) {
         if (ordenService.agregarPlatillo(id, dto)) {

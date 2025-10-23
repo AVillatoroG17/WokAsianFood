@@ -11,37 +11,40 @@ import java.util.List;
 @CrossOrigin(origins = "http://localhost:5173")
 @RequestMapping("/api/cocina")
 public class CocinaController {
-@Autowired
-private CocinaService cocinaService;
+    @Autowired
+    private CocinaService cocinaService;
 
-@GetMapping("/platillos")
-public ResponseEntity<List<PlatilloCocinaDTO>> obtenerTodosLosPlatillosParaCocina() {
-    List<PlatilloCocinaDTO> platillos = cocinaService.obtenerTodosLosPlatillosParaCocina();
-    return ResponseEntity.ok(platillos);
-}
+    @GetMapping("/platillos")
+    public ResponseEntity<List<PlatilloCocinaDTO>> obtenerTodosLosPlatillosParaCocina() {
+        List<PlatilloCocinaDTO> platillos = cocinaService.obtenerTodosLosPlatillosParaCocina();
+        return ResponseEntity.ok(platillos);
+    }
 
-@GetMapping("/pendientes")
-public ResponseEntity<List<PlatilloCocinaDTO>> obtenerPlatillosPendientes() {
-List<PlatilloCocinaDTO> platillos = cocinaService.obtenerPlatillosPendientes();
-return ResponseEntity.ok(platillos);
-}
-@GetMapping("/mis-platillos/{cocineroId}")
-public ResponseEntity<List<PlatilloCocinaDTO>> obtenerMisPlatillos(@PathVariable Integer cocineroId) {
-List<PlatilloCocinaDTO> platillos = cocinaService.obtenerMisPlatillos(cocineroId);
-return ResponseEntity.ok(platillos);
-}
-@PatchMapping("/platillos/{id}/iniciar")
-public ResponseEntity<Void> iniciarPreparacion(@PathVariable Integer id, @RequestParam Integer cocineroId) {
-if (cocinaService.iniciarPreparacion(id, cocineroId)) {
-return ResponseEntity.ok().build();
-}
-return ResponseEntity.badRequest().build();
-}
-@PatchMapping("/platillos/{id}/listo")
-public ResponseEntity<Void> marcarListo(@PathVariable Integer id) {
-if (cocinaService.marcarListo(id)) {
-return ResponseEntity.ok().build();
-}
-return ResponseEntity.badRequest().build();
-}
+    @GetMapping("/pendientes")
+    public ResponseEntity<List<PlatilloCocinaDTO>> obtenerPlatillosPendientes() {
+        List<PlatilloCocinaDTO> platillos = cocinaService.obtenerPlatillosPendientes();
+        return ResponseEntity.ok(platillos);
+    }
+
+    @GetMapping("/mis-platillos/{cocineroId}")
+    public ResponseEntity<List<PlatilloCocinaDTO>> obtenerMisPlatillos(@PathVariable Integer cocineroId) {
+        List<PlatilloCocinaDTO> platillos = cocinaService.obtenerMisPlatillos(cocineroId);
+        return ResponseEntity.ok(platillos);
+    }
+
+    @PatchMapping("/platillos/{id}/iniciar")
+    public ResponseEntity<Void> iniciarPreparacion(@PathVariable Integer id, @RequestParam Integer cocineroId) {
+        if (cocinaService.iniciarPreparacion(id, cocineroId)) {
+            return ResponseEntity.ok().build();
+        }
+        return ResponseEntity.badRequest().build();
+    }
+
+    @PatchMapping("/platillos/{id}/listo")
+    public ResponseEntity<Void> marcarListo(@PathVariable Integer id) {
+        if (cocinaService.marcarListo(id)) {
+            return ResponseEntity.ok().build();
+        }
+        return ResponseEntity.badRequest().build();
+    }
 }

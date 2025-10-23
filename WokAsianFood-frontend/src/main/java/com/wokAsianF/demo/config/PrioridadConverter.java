@@ -5,7 +5,7 @@ import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
 import java.util.stream.Stream;
 
-@Converter(autoApply = true)
+@Converter
 public class PrioridadConverter implements AttributeConverter<Prioridad, String> {
 
     @Override
