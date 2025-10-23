@@ -111,6 +111,11 @@ public class SecurityConfig {
                         .requestMatchers("/api/mesas/**", "/api/clientes/**")
                         .hasAnyAuthority("ROLE_MESERO", "ROLE_ADMIN")
 
+                        // 👇 AÑADE ESTA LÍNEA AQUÍ (Configuración de Pagos) 👇
+                        .requestMatchers("/api/pagos/**")
+                        .hasAnyAuthority("ROLE_ADMIN", "ROLE_CAJERO", "ROLE_MESERO")
+                        // 👆 FIN DE LA ADICIÓN 👆
+
                         // Estadísticas
                         .requestMatchers("/api/v1/estadisticas")
                         .hasAuthority("ROLE_ADMIN")
