@@ -59,7 +59,7 @@ public class PagoService {
         pago.setMontoImpuestos(orden.getImpuestos());
         pago.setMontoDescuento(orden.getDescuento());
         pago.setMontoTotal(orden.getTotalOrden());
-        pago.setFechaPago(LocalDateTime.now());
+        pago.setFechaPago(java.time.Instant.now());
         pago.setReferenciaTransaccion(referenciaTransaccion);
         pago.setNotasPago(notasPago);
 

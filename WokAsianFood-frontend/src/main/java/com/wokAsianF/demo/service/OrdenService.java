@@ -21,6 +21,8 @@ import com.wokAsianF.demo.enums.EstadoPreparacion;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -116,7 +118,7 @@ public class OrdenService {
         String numeroDeOrden = "ORD-" + System.currentTimeMillis();
         nuevaOrden.setNumeroOrden(numeroDeOrden);
 
-        nuevaOrden.setFechaOrden(LocalDateTime.now());
+        nuevaOrden.setFechaOrden(Instant.now());
         nuevaOrden.setTipoOrden(ordenInputDTO.getTipoOrden());
         nuevaOrden.setEstadoOrden(EstadoOrden.abierta);
         nuevaOrden.setNotasGenerales(ordenInputDTO.getNotasGenerales());

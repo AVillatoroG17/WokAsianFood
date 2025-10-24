@@ -6,12 +6,14 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Instant; // Asegúrate de que este import exista
 import java.util.List;
 
 @Repository
 public interface OrdenRepository extends JpaRepository<Orden, Integer> {
+
     List<Orden> findByEstadoOrden(EstadoOrden estadoOrden);
 
     List<Orden> findByMesaMesaId(Integer mesaId);
@@ -22,12 +24,24 @@ public interface OrdenRepository extends JpaRepository<Orden, Integer> {
     @Query("SELECT COALESCE(SUM(o.totalOrden), 0) FROM Orden o WHERE o.estadoOrden = 'pagada'")
     BigDecimal calcularTotalVentas();
 
-    @Query("SELECT COUNT(o) FROM Orden o WHERE o.fechaOrden >= :fechaInicio AND o.estadoOrden = 'pagada'")
-    Long contarOrdenesPorFecha(@Param("fechaInicio") LocalDateTime fechaInicio);
-
-    @Query("SELECT COALESCE(SUM(o.totalOrden), 0) FROM Orden o WHERE o.fechaOrden >= :fechaInicio AND o.estadoOrden = 'pagada'")
-    BigDecimal calcularVentasPorFecha(@Param("fechaInicio") LocalDateTime fechaInicio);
-
     @Query("SELECT COUNT(o) FROM Orden o WHERE o.estadoOrden = 'pagada'")
     Long contarOrdenesPagadas();
+
+    // -------------------------------------------------------------
+    // Métodos para ESTADÍSTICAS por FECHA (usan Instant)
+    // -------------------------------------------------------------
+
+    /**
+     * Calcula la suma total de ventas pagadas desde una fecha de inicio (Instant).
+     */
+    @Query("SELECT COALESCE(SUM(o.totalOrden), 0) FROM Orden o WHERE o.estadoOrden = 'pagada' AND o.fechaOrden >= :fechaInicio")
+    BigDecimal calcularTotalVentasDesdeFecha(@Param("fechaInicio") Instant fechaInicio); 
+    //                                                               ^ Sin negritas aquí
+
+    /**
+     * Cuenta el número total de órdenes pagadas desde una fecha de inicio (Instant).
+     */
+    @Query("SELECT COUNT(o) FROM Orden o WHERE o.estadoOrden = 'pagada' AND o.fechaOrden >= :fechaInicio")
+    Long contarOrdenesPagadasDesdeFecha(@Param("fechaInicio") Instant fechaInicio);
+    //                                                               ^ Sin negritas aquí
 }

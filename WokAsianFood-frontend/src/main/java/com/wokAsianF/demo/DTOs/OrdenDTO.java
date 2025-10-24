@@ -3,7 +3,7 @@ package com.wokAsianF.demo.DTOs;
 import com.wokAsianF.demo.enums.TipoOrden;
 import com.wokAsianF.demo.enums.EstadoOrden;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 
 public class OrdenDTO {
@@ -12,7 +12,7 @@ public class OrdenDTO {
     private String numeroMesa;
     private String nombreCliente;
     private String nombreMesero;
-    private LocalDateTime fechaOrden;
+    private Instant fechaOrden;
     private TipoOrden tipoOrden;
     private EstadoOrden estadoOrden;
     private BigDecimal subtotal;
@@ -35,8 +35,8 @@ public class OrdenDTO {
     public void setNombreCliente(String nombreCliente) { this.nombreCliente = nombreCliente; }
     public String getNombreMesero() { return nombreMesero; }
     public void setNombreMesero(String nombreMesero) { this.nombreMesero = nombreMesero; }
-    public LocalDateTime getFechaOrden() { return fechaOrden; }
-    public void setFechaOrden(LocalDateTime fechaOrden) { this.fechaOrden = fechaOrden; }
+    public Instant getFechaOrden() { return fechaOrden; }
+    public void setFechaOrden(Instant fechaOrden) { this.fechaOrden = fechaOrden; }
     public TipoOrden getTipoOrden() { return tipoOrden; }
     public void setTipoOrden(TipoOrden tipoOrden) { this.tipoOrden = tipoOrden; }
     public EstadoOrden getEstadoOrden() { return estadoOrden; }

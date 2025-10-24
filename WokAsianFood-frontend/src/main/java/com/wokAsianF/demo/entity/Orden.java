@@ -2,7 +2,7 @@ package com.wokAsianF.demo.entity;
 
 import jakarta.persistence.*;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 
 import com.wokAsianF.demo.enums.EstadoOrden;
@@ -32,7 +32,7 @@ public class Orden {
     private Usuario mesero;
 
     @Column(name = "fecha_orden")
-    private LocalDateTime fechaOrden;
+    private Instant fechaOrden;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "tipo_orden", columnDefinition = "tipo_orden")
@@ -112,11 +112,11 @@ public class Orden {
         this.mesero = mesero;
     }
 
-    public LocalDateTime getFechaOrden() {
+    public Instant getFechaOrden() {
         return fechaOrden;
     }
 
-    public void setFechaOrden(LocalDateTime fechaOrden) {
+    public void setFechaOrden(Instant fechaOrden) {
         this.fechaOrden = fechaOrden;
     }
 

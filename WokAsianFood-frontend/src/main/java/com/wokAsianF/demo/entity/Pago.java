@@ -2,7 +2,8 @@ package com.wokAsianF.demo.entity;
 
 import jakarta.persistence.*;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Instant;
+// import java.time.LocalDateTime; // Ya no necesario, usando Instant
 
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
@@ -23,8 +24,8 @@ public class Pago {
     private Orden orden;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "tipo_pago", columnDefinition = "tipo_pago default 'grupal'") 
-    @JdbcTypeCode(SqlTypes.NAMED_ENUM) 
+    @Column(name = "tipo_pago", columnDefinition = "tipo_pago default 'grupal'")
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     private TipoPago tipoPago = TipoPago.grupal;
 
     @Enumerated(EnumType.STRING)
@@ -56,8 +57,8 @@ public class Pago {
     @Column(precision = 10, scale = 2, columnDefinition = "decimal default 0")
     private BigDecimal cambio = BigDecimal.ZERO;
 
-    @Column(name = "fecha_pago")
-    private LocalDateTime fechaPago;
+    @Column(name = "fecha_pago", nullable = false) // 💡 Marcado como NO NULL para obligar el valor
+    private Instant fechaPago; // Tipo de dato Instant (UTC)
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cajero_id", nullable = false)
@@ -71,6 +72,19 @@ public class Pago {
 
     public Pago() {
     }
+    
+    // 🚀 NUEVA LÓGICA: Se ejecuta justo antes de guardar la entidad.
+    @PrePersist
+    protected void onCreate() {
+        if (fechaPago == null) {
+            // Asigna la hora actual del sistema (en UTC)
+            fechaPago = Instant.now(); 
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Getters y Setters (sin cambios, solo se incluyen para completar el archivo)
+    // ------------------------------------------------------------------
 
     public Integer getPagoId() {
         return pagoId;
@@ -168,11 +182,11 @@ public class Pago {
         this.cambio = cambio;
     }
 
-    public LocalDateTime getFechaPago() {
+    public Instant getFechaPago() {
         return fechaPago;
     }
 
-    public void setFechaPago(LocalDateTime fechaPago) {
+    public void setFechaPago(Instant fechaPago) {
         this.fechaPago = fechaPago;
     }
 
