@@ -73,14 +73,14 @@ public class SecurityConfig {
 						// Corregir la regla de POST para evitar duplicados y conflictos
 						.requestMatchers(HttpMethod.POST, "/api/ordenes", "/api/ordenes/**")
 						.hasAnyAuthority("ROLE_MESERO", "ROLE_ADMIN")
-						
+
 						// ✅ 2. FIX CLAVE: Incluir ROLE_CAJERO y ROLE_ENCARGADO para obtener órdenes
 						.requestMatchers(HttpMethod.GET, "/api/ordenes", "/api/ordenes/**")
 						.hasAnyAuthority("ROLE_MESERO", "ROLE_ADMIN", "ROLE_COCINERO", "ROLE_CAJERO", "ROLE_ENCARGADO")
 
 						.requestMatchers(HttpMethod.PUT, "/api/ordenes/**")
 						.hasAnyAuthority("ROLE_MESERO", "ROLE_ADMIN")
-						
+
 						// ✅ NUEVA REGLA ESPECÍFICA para marcar como SERVIDA
 						.requestMatchers(HttpMethod.PATCH, "/api/ordenes/*/servida")
 						.hasAnyAuthority("ROLE_MESERO", "ROLE_ADMIN")
@@ -108,14 +108,10 @@ public class SecurityConfig {
 						.requestMatchers(HttpMethod.DELETE, "/api/platillos/**")
 						.hasAuthority("ROLE_ADMIN")
 
-						// Mesas y clientes
-						.requestMatchers("/api/mesas/**", "/api/clientes/**")
-						.hasAnyAuthority("ROLE_MESERO", "ROLE_ADMIN")
-
 						// Configuración de Pagos: Debe incluir a Cajero
 						.requestMatchers("/api/pagos/**")
-						.hasAnyAuthority("ROLE_ADMIN", "ROLE_CAJERO", "ROLE_MESERO") 
-						
+						.hasAnyAuthority("ROLE_ADMIN", "ROLE_CAJERO", "ROLE_MESERO")
+
 						// Estadísticas
 						.requestMatchers("/api/v1/estadisticas")
 						.hasAuthority("ROLE_ADMIN")
@@ -123,6 +119,15 @@ public class SecurityConfig {
 						// Usuarios (para crear usuarios)
 						.requestMatchers("/api/usuarios/**")
 						.hasAuthority("ROLE_ADMIN")
+
+						.requestMatchers(HttpMethod.POST, "/api/mesas").hasAuthority("ROLE_ADMIN")
+						.requestMatchers(HttpMethod.PUT, "/api/mesas/**").hasAuthority("ROLE_ADMIN")
+						.requestMatchers(HttpMethod.DELETE, "/api/mesas/**").hasAuthority("ROLE_ADMIN")
+
+						.requestMatchers(HttpMethod.GET, "/api/mesas", "/api/mesas/**")
+						.hasAnyAuthority("ROLE_MESERO", "ROLE_ADMIN")
+
+						.requestMatchers("/api/clientes/**").hasAnyAuthority("ROLE_MESERO", "ROLE_ADMIN")
 
 						.anyRequest().authenticated())
 

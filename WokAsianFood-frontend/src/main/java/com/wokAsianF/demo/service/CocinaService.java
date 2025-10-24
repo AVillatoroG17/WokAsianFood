@@ -26,15 +26,15 @@ public class CocinaService {
     private EstadoOrdenService estadoOrdenService; 
 
     public List<PlatilloCocinaDTO> obtenerPlatillosPendientes() {
-        List<OrdenPlatillo> platillos = ordenPlatilloRepository.findByEstadoPreparacion(EstadoPreparacion.pendiente);
+        List<OrdenPlatillo> platillos = ordenPlatilloRepository.findByEstadoPreparacion(EstadoPreparacion.PENDIENTE);
         return platillos.stream()
                 .map(this::convertirAPlatilloCocinaDTO)
                 .collect(Collectors.toList());
     }
 
     public List<PlatilloCocinaDTO> obtenerTodosLosPlatillosParaCocina() {
-        List<EstadoPreparacion> estados = List.of(EstadoPreparacion.pendiente, EstadoPreparacion.en_cocina,
-                EstadoPreparacion.listo);
+        List<EstadoPreparacion> estados = List.of(EstadoPreparacion.PENDIENTE, EstadoPreparacion.EN_COCINA,
+                EstadoPreparacion.LISTO);
         List<OrdenPlatillo> platillos = ordenPlatilloRepository.findByEstadoPreparacionIn(estados);
         return platillos.stream()
                 .map(this::convertirAPlatilloCocinaDTO)
@@ -43,7 +43,7 @@ public class CocinaService {
 
     public List<PlatilloCocinaDTO> obtenerMisPlatillos(Integer cocineroId) {
         List<OrdenPlatillo> platillos = ordenPlatilloRepository.findByCocineroAsignado_UsuarioIdAndEstadoPreparacion(
-                cocineroId, EstadoPreparacion.en_cocina);
+                cocineroId, EstadoPreparacion.EN_COCINA);
         return platillos.stream()
                 .map(this::convertirAPlatilloCocinaDTO)
                 .collect(Collectors.toList());
@@ -85,11 +85,11 @@ public class CocinaService {
             return false;
         }
         
-        if (platillo.getEstadoPreparacion() != EstadoPreparacion.pendiente) {
+        if (platillo.getEstadoPreparacion() != EstadoPreparacion.PENDIENTE) {
             return false;
         }
         
-        platillo.setEstadoPreparacion(EstadoPreparacion.en_cocina);
+        platillo.setEstadoPreparacion(EstadoPreparacion.EN_COCINA);
         platillo.setCocineroAsignado(COCINERO);
         platillo.setHoraInicioPreparacion(LocalDateTime.now());
         ordenPlatilloRepository.save(platillo);
@@ -109,11 +109,11 @@ public class CocinaService {
         }
         
         OrdenPlatillo platillo = platilloOpt.get();
-        if (platillo.getEstadoPreparacion() != EstadoPreparacion.en_cocina) {
+        if (platillo.getEstadoPreparacion() != EstadoPreparacion.EN_COCINA) {
             return false;
         }
         
-        platillo.setEstadoPreparacion(EstadoPreparacion.listo);
+        platillo.setEstadoPreparacion(EstadoPreparacion.LISTO);
         platillo.setHoraFinPreparacion(LocalDateTime.now());
         ordenPlatilloRepository.save(platillo);
         

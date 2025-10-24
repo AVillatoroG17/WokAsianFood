@@ -24,6 +24,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.ArrayList; 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -40,20 +42,26 @@ public class OrdenService {
     private PlatilloRepository platilloRepository;
     @Autowired
     private UsuarioRepository usuarioRepository;
-    @Autowired // <-- NECESARIO
+    @Autowired 
     private MesaRepository mesaRepository;
-    @Autowired // <-- NECESARIO
+    @Autowired 
     private ClienteRepository clienteRepository;
 
     public List<OrdenDTO> obtenerTodos(List<EstadoOrden> estados, Integer mesaId) {
-        List<Orden> ordenes;
+        // CORRECCIÓN PREVIA: Inicializar 'ordenes' con una lista vacía para evitar el error.
+        List<Orden> ordenes = new ArrayList<>(); 
+        
         if (mesaId != null) {
-            ordenes = ordenRepository.findByMesaMesaId(mesaId);
+            Orden ordenActivaEnMesa = ordenRepository.findByMesaMesaId(mesaId);
+            if (ordenActivaEnMesa != null) {
+                ordenes = Collections.singletonList(ordenActivaEnMesa);
+            } 
         } else if (estados != null && !estados.isEmpty()) {
             ordenes = ordenRepository.findByEstadoOrdenIn(estados);
         } else {
             ordenes = ordenRepository.findAll();
         }
+        
         return ordenes.stream()
                 .map(this::convertirAOrdenDTO)
                 .collect(Collectors.toList());
@@ -120,13 +128,11 @@ public class OrdenService {
 
         nuevaOrden.setFechaOrden(Instant.now());
         nuevaOrden.setTipoOrden(ordenInputDTO.getTipoOrden());
-        nuevaOrden.setEstadoOrden(EstadoOrden.abierta);
+        nuevaOrden.setEstadoOrden(EstadoOrden.ABIERTA);
         nuevaOrden.setNotasGenerales(ordenInputDTO.getNotasGenerales());
         nuevaOrden.setNumeroPersonas(ordenInputDTO.getNumeroPersonas() != null ? ordenInputDTO.getNumeroPersonas() : 1);
         nuevaOrden.setDireccionEntrega(ordenInputDTO.getDireccionEntrega());
         nuevaOrden.setTelefonoContacto(ordenInputDTO.getTelefonoContacto());
-        // NOTA: Tu OrdenInputDTO no tiene campo 'descuento'. Asumiendo BigDecimal.ZERO
-        // por ahora.
         nuevaOrden.setDescuento(BigDecimal.ZERO);
 
         // 1. Asignar Mesero (requerido)
@@ -164,19 +170,12 @@ public class OrdenService {
             for (AgregarPlatilloDTO dto : ordenInputDTO.getPlatillos()) {
                 agregarPlatillo(savedOrden.getOrdenId(), dto);
             }
-            // Recalcular totales se llama dentro de agregarPlatillo, pero forzamos uno al
-            // final
         }
         recalcularTotales(savedOrden);
 
         // 5. Convertir la entidad guardada al DTO y devolver.
         return convertirAOrdenDTO(savedOrden);
     }
-
-    // Este método es una sobrecarga para soportar el DTO de creación,
-    // asumiendo que el DTO se convierte a la entidad Orden antes de llamar a
-    // crear(Orden)
-    // Se ha dejado solo el método con la entidad Orden para simplificar
 
     @Transactional
     public Orden actualizar(Integer id, Orden ordenActualizada) {
@@ -196,8 +195,6 @@ public class OrdenService {
                     orden.setTelefonoContacto(ordenActualizada.getTelefonoContacto());
                     orden.setNumeroPersonas(ordenActualizada.getNumeroPersonas());
 
-                    // Falta lógica para actualizar platillos individualmente.
-
                     recalcularTotales(orden);
                     return ordenRepository.save(orden);
                 }).orElse(null);
@@ -216,10 +213,11 @@ public class OrdenService {
         Optional<Orden> ordenOpt = ordenRepository.findById(ordenId);
         if (ordenOpt.isPresent()) {
             Orden orden = ordenOpt.get();
-            orden.setEstadoOrden(EstadoOrden.enviada_cocina);
+            orden.setEstadoOrden(EstadoOrden.ENVIADA_COCINA);
+            // El estado inicial del platillo individual es PENDIENTE
             List<OrdenPlatillo> platillos = ordenPlatilloRepository.findByOrdenOrdenId(ordenId);
             for (OrdenPlatillo platillo : platillos) {
-                platillo.setEstadoPreparacion(EstadoPreparacion.pendiente);
+                platillo.setEstadoPreparacion(EstadoPreparacion.PENDIENTE);
                 platillo.setHoraEnvioCocina(LocalDateTime.now());
                 ordenPlatilloRepository.save(platillo);
             }
@@ -242,7 +240,7 @@ public class OrdenService {
         return false;
     }
 
-    @Transactional // Asegúrate de que sea transaccional
+    @Transactional
     public boolean agregarPlatillo(Integer ordenId, AgregarPlatilloDTO dto) {
         Optional<Orden> ordenOpt = ordenRepository.findById(ordenId);
         Optional<Platillo> platilloOpt = platilloRepository.findById(dto.getPlatilloId());
@@ -253,13 +251,9 @@ public class OrdenService {
         Orden orden = ordenOpt.get();
         Platillo platillo = platilloOpt.get();
 
-        if (orden.getEstadoOrden() != EstadoOrden.abierta) {
+        if (orden.getEstadoOrden() != EstadoOrden.ABIERTA) {
             return false;
         }
-        // Asumiendo que Platillo tiene el getter getDisponible()
-        // if (!platillo.getDisponible()) {
-        // return false;
-        // }
 
         OrdenPlatillo ordenPlatillo = new OrdenPlatillo();
         ordenPlatillo.setOrden(orden);
@@ -271,7 +265,7 @@ public class OrdenService {
                 .multiply(BigDecimal.valueOf(dto.getCantidad()));
         ordenPlatillo.setSubtotal(subtotal);
         ordenPlatillo.setNotasPlatillo(dto.getNotasPlatillo());
-        ordenPlatillo.setEstadoPreparacion(EstadoPreparacion.pendiente);
+        ordenPlatillo.setEstadoPreparacion(EstadoPreparacion.PENDIENTE);
 
         ordenPlatilloRepository.save(ordenPlatillo);
         recalcularTotales(orden);
@@ -293,11 +287,11 @@ public class OrdenService {
         ordenRepository.save(orden);
     }
 
-    // --- MÉTODOS CORREGIDOS Y AGREGADOS PARA EL ESTADO DEL PLATILLO ---
+    // --- MÉTODOS DE FLUJO DE COCINA ---
 
     @Transactional
     public boolean actualizarEstadoPlatilloOrden(Integer ordenPlatilloId, EstadoPreparacion nuevoEstado,
-            Integer cocineroId) {
+                Integer cocineroId) {
         Optional<OrdenPlatillo> opOpt = ordenPlatilloRepository.findById(ordenPlatilloId);
         if (!opOpt.isPresent()) {
             return false;
@@ -305,6 +299,7 @@ public class OrdenService {
 
         OrdenPlatillo ordenPlatillo = opOpt.get();
 
+        // 1. Asignar Cocinero
         if (cocineroId != null) {
             Optional<Usuario> cocineroOpt = usuarioRepository.findById(cocineroId);
             if (cocineroOpt.isPresent()) {
@@ -312,17 +307,18 @@ public class OrdenService {
             }
         }
 
-        // Correcciones aplicadas aquí (sustituyendo 'en_proceso' por 'en_cocina' y
-        // 'lista' por 'listo')
-        if (nuevoEstado == EstadoPreparacion.en_cocina) {
+        // 2. Establecer timestamps
+        // Usamos EN_COCINA porque ese es el valor en el Enum de Java (corregido de EN_PREPARACION en FE)
+        if (nuevoEstado == EstadoPreparacion.EN_COCINA) {
             ordenPlatillo.setHoraInicioPreparacion(LocalDateTime.now());
-        } else if (nuevoEstado == EstadoPreparacion.listo) {
+        } else if (nuevoEstado == EstadoPreparacion.LISTO) {
             ordenPlatillo.setHoraFinPreparacion(LocalDateTime.now());
         }
 
         ordenPlatillo.setEstadoPreparacion(nuevoEstado);
         ordenPlatilloRepository.save(ordenPlatillo);
 
+        // 3. Actualizar estado general de la orden
         actualizarEstadoGeneralOrden(ordenPlatillo.getOrden().getOrdenId());
 
         return true;
@@ -334,17 +330,61 @@ public class OrdenService {
             Orden orden = ordenOpt.get();
             List<OrdenPlatillo> platillos = ordenPlatilloRepository.findByOrden_OrdenId(ordenId);
 
+            // La orden está lista si TODOS los platillos están LISTO, SERVIDO o CANCELADO
             boolean todosListosOServidos = platillos.stream()
-                    .allMatch(op -> op.getEstadoPreparacion() == EstadoPreparacion.listo ||
-                            op.getEstadoPreparacion() == EstadoPreparacion.servido ||
-                            op.getEstadoPreparacion() == EstadoPreparacion.cancelado);
+                    .allMatch(op -> op.getEstadoPreparacion() == EstadoPreparacion.LISTO ||
+                                    op.getEstadoPreparacion() == EstadoPreparacion.SERVIDO ||
+                                    op.getEstadoPreparacion() == EstadoPreparacion.CANCELADO);
 
-            if (todosListosOServidos && orden.getEstadoOrden() == EstadoOrden.enviada_cocina) {
-                orden.setEstadoOrden(EstadoOrden.lista_para_servir);
+            // Solo actualizamos a LISTA_PARA_SERVIR si previamente fue enviada a cocina
+            if (todosListosOServidos && orden.getEstadoOrden() == EstadoOrden.ENVIADA_COCINA) {
+                orden.setEstadoOrden(EstadoOrden.LISTA_PARA_SERVIR);
                 ordenRepository.save(orden);
             }
         }
     }
+    
+    // --- NUEVO MÉTODO PARA EL MESERO (MARCAR SERVIDA) ---
+    /**
+     * Marca todos los platillos de una orden de LISTO a SERVIDO y el estado de la orden a SERVIDA.
+     * @param ordenId ID de la orden.
+     * @param meseroId ID del mesero que realiza la acción (puede ser null si no se necesita registrar).
+     * @return true si la operación fue exitosa.
+     */
+    @Transactional
+    public boolean marcarOrdenComoServida(Integer ordenId, Integer meseroId) {
+        Optional<Orden> ordenOpt = ordenRepository.findById(ordenId);
+        if (!ordenOpt.isPresent()) {
+            return false;
+        }
+
+        Orden orden = ordenOpt.get();
+
+        // Verificar el estado correcto de la orden
+        if (orden.getEstadoOrden() != EstadoOrden.LISTA_PARA_SERVIR) {
+            // Se puede lanzar una excepción aquí si se prefiere un manejo de error más formal.
+            return false;
+        }
+        
+        // 1. Marcar todos los platillos LISTO como SERVIDO 
+        List<OrdenPlatillo> platillos = ordenPlatilloRepository.findByOrden_OrdenId(ordenId);
+        for (OrdenPlatillo op : platillos) {
+            // Solo actualiza si está LISTO. Los CANCELADO/SERVIDO se quedan igual.
+            if (op.getEstadoPreparacion() == EstadoPreparacion.LISTO) {
+                op.setEstadoPreparacion(EstadoPreparacion.SERVIDO);
+                // Si necesitas registrar el mesero, hazlo aquí.
+                ordenPlatilloRepository.save(op);
+            }
+        }
+
+        // 2. Actualizar el estado general de la Orden
+        orden.setEstadoOrden(EstadoOrden.SERVIDA);
+        ordenRepository.save(orden);
+
+        return true;
+    }
+    
+    // --- FIN DE MÉTODOS DE FLUJO ---
 
     public Integer obtenerMeseroIdPorNombre(String nombreCompleto) {
         return usuarioRepository.findByNombreCompleto(nombreCompleto)

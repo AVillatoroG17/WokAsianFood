@@ -7,7 +7,7 @@ export interface IPlatilloCocina {
     cantidad: number;
     nombreCategoria: string;
     colorCategoria?: string;
-    estadoPreparacion: 'pendiente' | 'en_preparacion' | 'listo';
+    estadoPreparacion: 'LISTO' | 'PENDIENTE' | 'EN_COCINA' | 'SERVIDO' | 'CANCELADO'; 
     prioridad: 'baja' | 'normal' | 'alta' | 'urgente';
     tiempoPreparacionEstimado: number;
     horaEnvioCocina: string;

@@ -22,6 +22,7 @@ const Navbar: React.FC = () => {
     const canAccessOrdenes = ['ADMIN', 'MESERO'].includes(userRole);
     const canAccessCocina = ['ADMIN', 'COCINERO'].includes(userRole);
     
+    
     // Las siguientes tres líneas se han actualizado o mantenido para la nueva lógica:
     const canAccessInventario = ['ADMIN', 'ENCARGADO'].includes(userRole); // Actualizada (o confirmada)
     const canAccessCaja = ['ADMIN', 'CAJERO'].includes(userRole);         // Actualizada para reflejar el requisito 'ADMIN' || 'CAJERO'
@@ -54,12 +55,20 @@ const Navbar: React.FC = () => {
                     )}
 
                     {canAccessUsuarios && (
-                        <Link 
-                            to="/admin/usuarios" 
-                            className="hover:text-orange-400 transition-colors"
-                        >
-                            👥 Usuarios
-                        </Link>
+                        <>
+                            <Link 
+                                to="/admin/usuarios" 
+                                className="hover:text-orange-400 transition-colors"
+                            >
+                                👥 Usuarios
+                            </Link>
+                            <Link 
+                                to="/admin/mesas" 
+                                className="hover:text-orange-400 transition-colors"
+                            >
+                                🪑 Mesas
+                            </Link>
+                        </>
                     )}
 
                     {/* NUEVOS Y EXISTENTES ENLACES DE OPERACIÓN (AJUSTADOS) */}

@@ -9,4 +9,6 @@ import java.util.List;
 @Repository
 public interface MesaRepository extends JpaRepository<Mesa, Integer> {
     List<Mesa> findByActivaTrue();
+
+    boolean existsByNumeroMesa(String numeroMesa);
 }

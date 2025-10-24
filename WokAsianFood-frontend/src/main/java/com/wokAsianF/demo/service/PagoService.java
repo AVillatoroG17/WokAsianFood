@@ -39,11 +39,11 @@ public class PagoService {
         Orden orden = ordenRepository.findById(ordenId)
                 .orElseThrow(() -> new IllegalArgumentException("Orden no encontrada con ID: " + ordenId));
 
-        if (orden.getEstadoOrden() == EstadoOrden.pagada) {
+        if (orden.getEstadoOrden() == EstadoOrden.PAGADA) {
             throw new IllegalStateException("La orden ya fue pagada anteriormente");
         }
 
-        if (orden.getEstadoOrden() == EstadoOrden.cancelada) {
+        if (orden.getEstadoOrden() == EstadoOrden.CANCELADA) {
             throw new IllegalStateException("No se puede pagar una orden cancelada");
         }
 
@@ -94,7 +94,7 @@ public class PagoService {
             pago.setMontoPorPersona(montoPorPersona);
         }
 
-        orden.setEstadoOrden(EstadoOrden.pagada);
+        orden.setEstadoOrden(EstadoOrden.PAGADA);
 
         ordenRepository.save(orden);
 
@@ -104,10 +104,10 @@ public class PagoService {
     }
 
     public boolean puedeSerPagada(Integer ordenId) {
-        return ordenRepository.findById(ordenId)
-                .map(orden -> orden.getEstadoOrden() != EstadoOrden.pagada
-                        && orden.getEstadoOrden() != EstadoOrden.cancelada)
-                .orElse(false);
+    return ordenRepository.findById(ordenId)
+        .filter(orden -> orden.getEstadoOrden() != EstadoOrden.PAGADA
+            && orden.getEstadoOrden() != EstadoOrden.CANCELADA)
+        .isPresent();
     }
 
     public Pago obtenerPagoPorOrden(Integer ordenId) {

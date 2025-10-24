@@ -1,7 +1,7 @@
 export enum EstadoPreparacion {
-    PENDIENTE = 'pendiente',
-    EN_COCINA = 'en_cocina',
-    LISTO = 'listo',
-    SERVIDO = 'servido',
-    CANCELADO = 'cancelado',
+    PENDIENTE = 'PENDIENTE',
+    EN_COCINA = 'EN_COCINA',
+    LISTO = 'LISTO',
+    SERVIDO = 'SERVIDO',
+    CANCELADO = 'CANCELADO',
 }

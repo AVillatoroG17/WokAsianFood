@@ -23,46 +23,47 @@ const useTimeAgo = (dateString: string) => {
 };
 
 // --- COMPONENTES ---
-const PlatilloCard: React.FC<{ platillo: IPlatilloCocina, onUpdateEstado: (id: number, estado: 'en_preparacion' | 'listo') =>
-    void }> = ({ platillo, onUpdateEstado }) => {
+// NOTA: Se actualizó 'EN_PREPARACION' a 'EN_COCINA' para coincidir con el Enum de Java
+const PlatilloCard: React.FC<{ platillo: IPlatilloCocina, onUpdateEstado: (id: number, estado: 'EN_COCINA' | 'LISTO') => 
+	void }> = ({ platillo, onUpdateEstado }) => {
     const timeAgo = useTimeAgo(platillo.horaEnvioCocina);
     const isOverdue = !platillo.horaInicioPreparacion && (new Date().getTime() - new Date(platillo.horaEnvioCocina).getTime()) >
-        10 * 60000;
+		10 * 60000;
 
     return (
         <div className={`bg-white rounded-lg shadow-md p-4 border-l-4 ${isOverdue ? 'border-red-500' : 'border-blue-500'}`}>
             <div className="flex justify-between items-center mb-2">
                 <span className="font-bold text-lg">{platillo.numeroOrden}</span>
                 <span className="text-sm text-gray-600">{platillo.numeroMesa ? `Mesa ${platillo.numeroMesa}` : 'Para Llevar'
-    }</span>
+				}</span>
             </div>
             <div className="my-3">
                 <p className="font-bold text-xl">{platillo.nombrePlatillo} <span className="text-blue-600
-    font-black">x{platillo.cantidad}</span></p>
+				font-black">x{platillo.cantidad}</span></p>
                 {platillo.notasPlatillo && <p className="text-sm text-orange-600 flex items-center mt-1"><MessageSquare size=
-    {14} className="mr-1"/> {platillo.notasPlatillo}</p>}
+				{14} className="mr-1"/> {platillo.notasPlatillo}</p>}
             </div>
             <div className="text-xs text-gray-500 flex justify-between items-center border-t pt-2">
                 <span><Clock size={14} className="inline"/> {timeAgo}</span>
                 <span>~{platillo.tiempoPreparacionEstimado} min</span>
             </div>
-            {platillo.estadoPreparacion === 'pendiente' && <button onClick={() => onUpdateEstado(platillo.ordenPlatilloId,
-    'en_preparacion')} className="w-full mt-3 bg-green-500 text-white py-2 rounded-lg flex items-center justify-center"> <Play size
-    ={16} className="mr-1"/> Empezar </button>}
-            {platillo.estadoPreparacion === 'en_preparacion' && <button onClick={() => onUpdateEstado(platillo.ordenPlatilloId,
-    'listo')} className="w-full mt-3 bg-blue-500 text-white py-2 rounded-lg flex items-center justify-center"> <CheckCircle size=
-    {16} className="mr-1"/> Listo </button>}
+            {platillo.estadoPreparacion === 'PENDIENTE' && <button onClick={() => onUpdateEstado(platillo.ordenPlatilloId,
+				'EN_COCINA')} className="w-full mt-3 bg-green-500 text-white py-2 rounded-lg flex items-center justify-center"> <Play size
+				={16} className="mr-1"/> Empezar </button>}
+            {platillo.estadoPreparacion === 'EN_COCINA' && <button onClick={() => onUpdateEstado(platillo.ordenPlatilloId,
+				'LISTO')} className="w-full mt-3 bg-blue-500 text-white py-2 rounded-lg flex items-center justify-center"> <CheckCircle size=
+				{16} className="mr-1"/> Listo </button>}
         </div>
     );
 };
 
 const KanbanColumn: React.FC<{ title: string, platillos: IPlatilloCocina[], onUpdateEstado: any }> = ({ title, platillos,
-    onUpdateEstado }) => (
+	onUpdateEstado }) => (
     <div className="bg-gray-100 rounded-lg p-3">
         <h2 className="font-bold text-lg mb-3 flex justify-between items-center">{title} <span className="bg-gray-300
-    text-gray-700 text-sm font-semibold rounded-full px-2">{platillos.length}</span></h2>
+		text-gray-700 text-sm font-semibold rounded-full px-2">{platillos.length}</span></h2>
         <div className="space-y-4 h-[75vh] overflow-y-auto pr-2">{platillos.map(p => <PlatilloCard key={p.ordenPlatilloId}
-    platillo={p} onUpdateEstado={onUpdateEstado} />)}</div>
+			platillo={p} onUpdateEstado={onUpdateEstado} />)}</div>
     </div>
 );
 
@@ -89,7 +90,8 @@ const PedidosPage: React.FC = () => {
         }
     }, [fetchPlatillos, user]);
 
-    const handleUpdateEstado = useCallback(async (id: number, nuevoEstado: 'en_preparacion' | 'listo') => {
+    // NOTA: Se actualizó 'EN_PREPARACION' a 'EN_COCINA'
+    const handleUpdateEstado = useCallback(async (id: number, nuevoEstado: 'EN_COCINA' | 'LISTO') => {
         const oldPlatillos = [...platillos];
         
         // Optimistic update
@@ -100,7 +102,7 @@ const PedidosPage: React.FC = () => {
         ));
 
         try {
-            if (nuevoEstado === 'en_preparacion') {
+            if (nuevoEstado === 'EN_COCINA') {
                 await iniciarPreparacionPlatillo(id, user!.usuarioId);
             } else {
                 await marcarPlatilloListo(id);
@@ -111,13 +113,14 @@ const PedidosPage: React.FC = () => {
         }
     }, [platillos, user]);
 
-    const pendientes = useMemo(() => platillos.filter(p => p.estadoPreparacion === 'pendiente').sort((a, b) => new Date(a.
-    horaEnvioCocina).getTime() - new Date(b.horaEnvioCocina).getTime()), [platillos]);
-    const enPreparacion = useMemo(() => platillos.filter(p => p.estadoPreparacion === 'en_preparacion'), [platillos]);
-    const listos = useMemo(() => platillos.filter(p => p.estadoPreparacion === 'listo'), [platillos]);
+    const pendientes = useMemo(() => platillos.filter(p => p.estadoPreparacion === 'PENDIENTE').sort((a, b) => new Date(a.
+		horaEnvioCocina).getTime() - new Date(b.horaEnvioCocina).getTime()), [platillos]);
+    // NOTA: Se actualizó el filtro a 'EN_COCINA'
+	const enPreparacion = useMemo(() => platillos.filter(p => p.estadoPreparacion === 'EN_COCINA'), [platillos]); 
+    const listos = useMemo(() => platillos.filter(p => p.estadoPreparacion === 'LISTO'), [platillos]);
 
     // La comprobación de seguridad definitiva con .trim()
-    if (user && user.rol.trim() !== 'COCINERO' && user.rol.trim() !== 'ADMIN') { // Corregido: 'user.role' a 'user.rol'
+    if (user && user.rol.trim() !== 'COCINERO' && user.rol.trim() !== 'ADMIN') { 
         return <Navigate to="/unauthorized" replace />;
     }
 

@@ -43,7 +43,8 @@ const MisOrdenesPage: React.FC = () => {
         try {
             const response = await api.get('/api/ordenes', {
                 params: { 
-                    estados: 'enviada_cocina,en_proceso,lista_para_servir,servida,lista_para_pago',
+                    // Se incluye ENVIADA_COCINA para ver el flujo completo
+                    estados: 'ENVIADA_COCINA,EN_PROCESO,LISTA_PARA_SERVIR,SERVIDA,LISTA_PARA_PAGO',
                     meseroId: user?.usuarioId
                 }
             });
@@ -58,6 +59,9 @@ const MisOrdenesPage: React.FC = () => {
     const handleMarcarServida = async (ordenId: number) => {
         if (!user?.usuarioId) return;
         try {
+            // Lógica para marcar TODOS los platillos de la orden como SERVIDOS
+            // Nota: Se asume que este endpoint marca todos los platillos LISTO a SERVIDO
+            // y luego marca la orden general a SERVIDA.
             await api.patch(`/api/ordenes/${ordenId}/servida`, null, {
                 params: { meseroId: user.usuarioId }
             });
@@ -91,19 +95,19 @@ const MisOrdenesPage: React.FC = () => {
         );
         if (filtroEstado === 'en_proceso') {
             resultado = resultado.filter(o => 
-                ['enviada_cocina', 'en_proceso'].includes(o.estadoOrden)
+                ['ENVIADA_COCINA', 'EN_PROCESO'].includes(o.estadoOrden)
             );
         } else if (filtroEstado === 'listas') {
-            resultado = resultado.filter(o => o.estadoOrden === 'lista_para_servir');
+            resultado = resultado.filter(o => o.estadoOrden === 'LISTA_PARA_SERVIR');
         }
         return resultado;
     }, [ordenes, searchTerm, filtroEstado]);
 
     const stats = useMemo(() => ({
         total: ordenes.length,
-        enProceso: ordenes.filter(o => ['enviada_cocina', 'en_proceso'].includes(o.estadoOrden)).length,
-        listas: ordenes.filter(o => o.estadoOrden === 'lista_para_servir').length,
-        servidas: ordenes.filter(o => ['servida', 'lista_para_pago'].includes(o.estadoOrden)).length, 
+        enProceso: ordenes.filter(o => ['ENVIADA_COCINA', 'EN_PROCESO'].includes(o.estadoOrden)).length,
+        listas: ordenes.filter(o => o.estadoOrden === 'LISTA_PARA_SERVIR').length,
+        servidas: ordenes.filter(o => ['SERVIDA', 'LISTA_PARA_PAGO'].includes(o.estadoOrden)).length, 
     }), [ordenes]);
 
     if (!tieneAcceso) {
@@ -159,14 +163,16 @@ const MisOrdenesPage: React.FC = () => {
 
 const OrdenCard: React.FC<{orden: OrdenActiva; onMarcarServida: (ordenId: number) => void; onSolicitarPago: (ordenId: number) => void;}> = ({ orden, onMarcarServida, onSolicitarPago }) => {
     const estadoConfig = {
-        enviada_cocina: { bg: 'bg-yellow-100', text: 'text-yellow-800', label: '🚀 Enviada a Cocina' },
-        en_proceso: { bg: 'bg-blue-100', text: 'text-blue-800', label: '👨‍🍳 En Preparación' },
-        lista_para_servir: { bg: 'bg-green-100', text: 'text-green-800', label: '✅ Lista para Servir' },
-        servida: { bg: 'bg-purple-100', text: 'text-purple-800', label: '🍽️ Servida' },
-        lista_para_pago: { bg: 'bg-indigo-100', text: 'text-indigo-800', label: '💰 Pago Solicitado' },
+        ENVIADA_COCINA: { bg: 'bg-yellow-100', text: 'text-yellow-800', label: '🚀 Enviada a Cocina' },
+        EN_PROCESO: { bg: 'bg-blue-100', text: 'text-blue-800', label: '👨‍🍳 En Preparación' },
+        LISTA_PARA_SERVIR: { bg: 'bg-green-100', text: 'text-green-800', label: '✅ Lista para Servir' },
+        SERVIDA: { bg: 'bg-purple-100', text: 'text-purple-800', label: '🍽️ Servida' },
+        LISTA_PARA_PAGO: { bg: 'bg-indigo-100', text: 'text-indigo-800', label: '💰 Pago Solicitado' },
     };
-    const estado = estadoConfig[orden.estadoOrden as keyof typeof estadoConfig] || estadoConfig.en_proceso;
-    const todosListos = orden.platillos.every(p => p.estadoPreparacion === 'listo' || p.estadoPreparacion === 'servido');
+    const estado = estadoConfig[orden.estadoOrden as keyof typeof estadoConfig] || estadoConfig.EN_PROCESO;
+    
+    // CORRECCIÓN CLAVE: Usar mayúsculas para comparar con el Enum de Java
+    const todosListos = orden.platillos.every(p => p.estadoPreparacion === 'LISTO' || p.estadoPreparacion === 'SERVIDO');
 
     return (
         <div className="bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow p-6">
@@ -191,11 +197,12 @@ const OrdenCard: React.FC<{orden: OrdenActiva; onMarcarServida: (ordenId: number
                                 <span className="font-medium">{platillo.cantidad}x</span> {platillo.nombrePlatillo}
                                 {platillo.notasPlatillo && <p className="text-xs text-orange-600 italic">📝 {platillo.notasPlatillo}</p>}
                             </div>
-                            <span className={`text-xs px-2 py-1 rounded ${platillo.estadoPreparacion === 'listo' || platillo.estadoPreparacion === 'servido' ? 'bg-green-100 text-green-800' : platillo.estadoPreparacion === 'en_cocina' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}`}>
-                                {platillo.estadoPreparacion === 'listo' && '✅'}
-                                {platillo.estadoPreparacion === 'en_cocina' && '👨‍🍳'}
-                                {platillo.estadoPreparacion === 'pendiente' && '⏳'}
-                                {platillo.estadoPreparacion === 'servido' && '🍽️'}
+                            {/* CORRECCIÓN: Usar mayúsculas en las comparaciones de estadoPreparacion */}
+                            <span className={`text-xs px-2 py-1 rounded ${platillo.estadoPreparacion === 'LISTO' || platillo.estadoPreparacion === 'SERVIDO' ? 'bg-green-100 text-green-800' : platillo.estadoPreparacion === 'EN_COCINA' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}`}>
+                                {platillo.estadoPreparacion === 'LISTO' && '✅'}
+                                {platillo.estadoPreparacion === 'EN_COCINA' && '👨‍🍳'}
+                                {platillo.estadoPreparacion === 'PENDIENTE' && '⏳'}
+                                {platillo.estadoPreparacion === 'SERVIDO' && '🍽️'}
                             </span>
                         </div>
                     ))}
@@ -207,22 +214,23 @@ const OrdenCard: React.FC<{orden: OrdenActiva; onMarcarServida: (ordenId: number
                     <span className="text-xl font-bold text-green-600">Q{orden.totalOrden.toFixed(2)}</span>
                 </div>
             </div>
-            {orden.estadoOrden === 'lista_para_servir' && (
+            {orden.estadoOrden === 'LISTA_PARA_SERVIR' && (
                 <button onClick={() => onMarcarServida(orden.ordenId)} className={`w-full py-3 rounded-lg font-bold transition-colors ${todosListos ? 'bg-green-600 text-white hover:bg-green-700 shadow-md' : 'bg-gray-300 text-gray-500 cursor-not-allowed'} flex items-center justify-center`} disabled={!todosListos} title={!todosListos ? 'Espera a que todos los platillos estén listos' : 'Marcar como servida'}>
                     <FaCheckCircle className="mr-2" />
-                    {todosListos ? 'Marcar como Servida' : 'Esperando Platillos...'}
+                    {/* El mensaje es ahora condicional y usa 'todosListos' correctamente */}
+                    {todosListos ? 'Marcar como Servida' : 'Esperando Platillos...'} 
                 </button>
             )}
-            {(orden.estadoOrden === 'servida' || orden.estadoOrden === 'lista_para_pago') && (
+            {(orden.estadoOrden === 'SERVIDA' || orden.estadoOrden === 'LISTA_PARA_PAGO') && (
                 <div className="space-y-3">
-                    {orden.estadoOrden === 'servida' && (
+                    {orden.estadoOrden === 'SERVIDA' && (
                         <button onClick={() => onSolicitarPago(orden.ordenId)} className="w-full py-3 rounded-lg font-bold transition-colors bg-purple-600 text-white hover:bg-purple-700 flex items-center justify-center shadow-md hover:shadow-lg">
                             <FaDollarSign className="mr-2" />
                             Solicitar Pago / Cuenta
                         </button>
                     )}
-                    <div className={`text-center py-3 rounded-lg font-semibold ${orden.estadoOrden === 'servida' ? 'bg-purple-100 text-purple-800' : 'bg-indigo-100 text-indigo-800'}`}>
-                        {orden.estadoOrden === 'servida' ? '🍽️ Orden Servida' : '💰 Esperando Pago del Cliente/Caja'}
+                    <div className={`text-center py-3 rounded-lg font-semibold ${orden.estadoOrden === 'SERVIDA' ? 'bg-purple-100 text-purple-800' : 'bg-indigo-100 text-indigo-800'}`}>
+                        {orden.estadoOrden === 'SERVIDA' ? '🍽️ Orden Servida' : '💰 Esperando Pago del Cliente/Caja'}
                     </div>
                 </div>
             )}

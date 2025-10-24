@@ -9,8 +9,8 @@ export interface IOrdenDTO {
     nombreCliente?: string;
     meseroId: number;
     nombreMesero?: string;
-    estadoOrden: 'abierta' | 'enviada_cocina' | 'en_preparacion' | 'lista' | 'lista_para_servir' | 'entregada' | 'servida' | 'pagada' | 'cancelada';
-    tipoOrden?: 'mesa' | 'para_llevar' | 'domicilio';
+    estadoOrden: 'ABIERTA' | 'ENVIADA_COCINA' | 'EN_PROCESO' | 'LISTA' | 'LISTA_PARA_SERVIR' | 'ENTREGADA' | 'SERVIDA' | 'PAGADA' | 'CANCELADA';
+    tipoOrden?: 'MESA' | 'PARA_LLEVAR' | 'DOMICILIO';
     subtotal?: number;
     impuestos?: number;
     descuento?: number;

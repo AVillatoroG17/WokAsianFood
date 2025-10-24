@@ -16,6 +16,7 @@ import PlatillosCRUDPage from './pages/platillos/PlatillosCRUDPage';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './router/ProtectedRoute';
 import MisOrdenesPage from './pages/mesero/MisOrdenesPage';
+import GestionMesasPage from './pages/admin/GestionMesasPage';
 
 // Layout principal que incluye el Navbar para las páginas internas
 const MainLayout: React.FC<{ children: JSX.Element }> = ({ children }) => (
@@ -193,6 +194,18 @@ const App: React.FC = () => {
                     {/* RUTA COMODÍN (404)                           */}
                     {/* ============================================ */}
                     <Route path="*" element={<Navigate to="/" />} />
+
+                    <Route
+                        path="/admin/mesas"
+                        element={
+                            <ProtectedRoute allowedRoles={['ADMIN']}>
+                                <MainLayout>
+                                    <GestionMesasPage />
+                                </MainLayout>
+                            </ProtectedRoute>
+                        }
+                    />
+
                 </Routes>
             </Router>
         </AuthProvider>

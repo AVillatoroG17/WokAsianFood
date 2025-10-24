@@ -27,7 +27,7 @@ interface CartItem {
 interface OrderState {
     mesa: IMesa | null;
     numeroPersonas: number;
-    tipoOrden: 'mesa' | 'takeout' | 'delivery';
+    tipoOrden: 'mesa' | 'takeout' | 'delivery'; // These are internal UI values, will be mapped to uppercase values before sending to API
     carrito: CartItem[];
     clienteId?: number | null;
     direccionEntrega?: string;
@@ -155,11 +155,11 @@ const OrdenesPage: React.FC = () => {
             return;
         }
 
-        // Map internal tipoOrden to API expected values
-        const tipoOrdenMap: Record<'mesa' | 'takeout' | 'delivery', 'mesa' | 'para_llevar' | 'domicilio'> = {
-            mesa: 'mesa',
-            takeout: 'para_llevar',
-            delivery: 'domicilio'
+        // Map internal tipoOrden to API expected values (uppercase to match Java enum)
+        const tipoOrdenMap: Record<'mesa' | 'takeout' | 'delivery', 'MESA' | 'PARA_LLEVAR' | 'DOMICILIO'> = {
+            mesa: 'MESA',
+            takeout: 'PARA_LLEVAR',
+            delivery: 'DOMICILIO'
         };
 
         const ordenDTO: IOrdenInputDTO = {

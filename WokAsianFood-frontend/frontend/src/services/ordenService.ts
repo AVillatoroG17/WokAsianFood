@@ -7,7 +7,7 @@ export interface IOrdenInputDTO {
     mesaId: number;
     clienteId?: number;
     meseroId: number;
-    tipoOrden: 'mesa' | 'para_llevar' | 'domicilio';
+    tipoOrden: 'MESA' | 'PARA_LLEVAR' | 'DOMICILIO';
     notasGenerales?: string;
     direccionEntrega?: string;
     telefonoContacto?: string;

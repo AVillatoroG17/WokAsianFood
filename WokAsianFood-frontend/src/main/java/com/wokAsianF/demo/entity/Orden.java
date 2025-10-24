@@ -36,11 +36,11 @@ public class Orden {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "tipo_orden", columnDefinition = "tipo_orden")
-    private TipoOrden tipoOrden = TipoOrden.mesa;
+    private TipoOrden tipoOrden = TipoOrden.MESA;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "estado_orden", columnDefinition = "estado_orden")
-    private EstadoOrden estadoOrden = EstadoOrden.abierta;
+    private EstadoOrden estadoOrden = EstadoOrden.ABIERTA;
 
     @Column(precision = 10, scale = 2, columnDefinition = "decimal default 0")
     private BigDecimal subtotal = BigDecimal.ZERO;

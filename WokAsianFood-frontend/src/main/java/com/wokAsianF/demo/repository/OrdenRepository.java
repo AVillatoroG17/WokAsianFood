@@ -1,47 +1,32 @@
 package com.wokAsianF.demo.repository;
 
-import com.wokAsianF.demo.entity.Orden;
-import com.wokAsianF.demo.enums.EstadoOrden;
+import com.wokAsianF.demo.entity.Orden; // Tu entidad
+import com.wokAsianF.demo.enums.EstadoOrden; // Tu Enum
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
-import java.time.Instant; // Asegúrate de que este import exista
 import java.util.List;
 
 @Repository
+// 1. CORRECCIÓN ID: Cambiado de Long a Integer para coincidir con el uso en tus servicios.
 public interface OrdenRepository extends JpaRepository<Orden, Integer> {
+    
+    // --- MÉTODOS DE LÓGICA DE NEGOCIO (AÑADIDOS para resolver errores de compilación) ---
+    
+    // 2. CORRECCIÓN: Resuelve: The method findByEstadoOrdenIn(...) is undefined
+    List<Orden> findByEstadoOrdenIn(List<EstadoOrden> estados);
 
-    List<Orden> findByEstadoOrden(EstadoOrden estadoOrden);
-
-    List<Orden> findByMesaMesaId(Integer mesaId);
-
-    @Query(value = "SELECT o FROM Orden o WHERE CAST(o.estadoOrden AS text) IN :#{#estados.![name()]}")
-    List<Orden> findByEstadoOrdenIn(@Param("estados") List<EstadoOrden> estados);
-
-    @Query("SELECT COALESCE(SUM(o.totalOrden), 0) FROM Orden o WHERE o.estadoOrden = 'pagada'")
+    // 3. CORRECCIÓN: Resuelve: The method findByMesaMesaId(...) is undefined
+    Orden findByMesaMesaId(Integer mesaId);
+    
+    // --- METRICAS TOTALES (Consultas de la conversación anterior) ---
+    
+    @Query("SELECT SUM(o.totalOrden) FROM Orden o WHERE o.estadoOrden = 'PAGADA'")
     BigDecimal calcularTotalVentas();
 
-    @Query("SELECT COUNT(o) FROM Orden o WHERE o.estadoOrden = 'pagada'")
+    @Query("SELECT COUNT(o) FROM Orden o WHERE o.estadoOrden = 'PAGADA'")
     Long contarOrdenesPagadas();
-
-    // -------------------------------------------------------------
-    // Métodos para ESTADÍSTICAS por FECHA (usan Instant)
-    // -------------------------------------------------------------
-
-    /**
-     * Calcula la suma total de ventas pagadas desde una fecha de inicio (Instant).
-     */
-    @Query("SELECT COALESCE(SUM(o.totalOrden), 0) FROM Orden o WHERE o.estadoOrden = 'pagada' AND o.fechaOrden >= :fechaInicio")
-    BigDecimal calcularTotalVentasDesdeFecha(@Param("fechaInicio") Instant fechaInicio); 
-    //                                                               ^ Sin negritas aquí
-
-    /**
-     * Cuenta el número total de órdenes pagadas desde una fecha de inicio (Instant).
-     */
-    @Query("SELECT COUNT(o) FROM Orden o WHERE o.estadoOrden = 'pagada' AND o.fechaOrden >= :fechaInicio")
-    Long contarOrdenesPagadasDesdeFecha(@Param("fechaInicio") Instant fechaInicio);
-    //                                                               ^ Sin negritas aquí
+    
 }

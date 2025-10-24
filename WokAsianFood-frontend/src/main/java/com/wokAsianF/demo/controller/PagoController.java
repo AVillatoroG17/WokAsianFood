@@ -26,8 +26,8 @@ public class PagoController {
     @GetMapping("/ordenes-facturables")
     public ResponseEntity<List<OrdenDTO>> getOrdenesFacturables() {
         List<EstadoOrden> estadosFacturables = List.of(
-            EstadoOrden.servida, 
-            EstadoOrden.lista_para_pago
+            EstadoOrden.SERVIDA,
+            EstadoOrden.LISTA_PARA_PAGO
         );
         List<Orden> ordenes = ordenRepository.findByEstadoOrdenIn(estadosFacturables);
         List<OrdenDTO> ordenesDTO = ordenes.stream()
@@ -41,7 +41,7 @@ public class PagoController {
         Pago nuevoPago = pagoRepository.save(pago);
         Orden orden = ordenRepository.findById(pago.getOrden().getOrdenId()).orElse(null);
         if (orden != null) {
-            orden.setEstadoOrden(EstadoOrden.pagada);
+            orden.setEstadoOrden(EstadoOrden.PAGADA);
             ordenRepository.save(orden);
         }
         return ResponseEntity.ok(nuevoPago);

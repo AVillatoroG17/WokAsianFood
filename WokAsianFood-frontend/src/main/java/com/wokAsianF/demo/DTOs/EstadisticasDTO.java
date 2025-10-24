@@ -12,6 +12,7 @@ public class EstadisticasDTO {
 
     public EstadisticasDTO() {}
 
+    // Getters y Setters
     public BigDecimal getTotalVentas() { return totalVentas; }
     public void setTotalVentas(BigDecimal totalVentas) { this.totalVentas = totalVentas; }
     public Integer getTotalOrdenes() { return totalOrdenes; }

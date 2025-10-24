@@ -45,12 +45,13 @@ public class OrdenController {
             @RequestParam(required = false) Integer mesaId,
             @RequestParam(required = false) Integer meseroId) {
         List<EstadoOrden> listaEstados = null;
-        if (estados != null && !estados.isEmpty()) {
-            listaEstados = Arrays.stream(estados.split(","))
-                    .map(String::trim)
-                    .map(EstadoOrden::valueOf)
-                    .collect(Collectors.toList());
-        }
+    if (estados != null && !estados.isEmpty()) {
+        // Aceptar valores en mayúsculas o minúsculas desde el frontend
+        listaEstados = Arrays.stream(estados.split(","))
+            .map(String::trim)
+            .map(s -> EstadoOrden.valueOf(s.toUpperCase()))
+            .collect(Collectors.toList());
+    }
         List<OrdenDTO> ordenes = ordenService.obtenerTodos(listaEstados, mesaId);
         if (meseroId != null) {
             ordenes = ordenes.stream()

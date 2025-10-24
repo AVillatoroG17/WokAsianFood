@@ -35,7 +35,7 @@ public class OrdenPlatillo {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "estado_preparacion")
-    private EstadoPreparacion estadoPreparacion = EstadoPreparacion.pendiente;
+    private EstadoPreparacion estadoPreparacion = EstadoPreparacion.PENDIENTE;
 
     @Column(name = "hora_envio_cocina")
     private LocalDateTime horaEnvioCocina;
