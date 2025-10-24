@@ -79,9 +79,9 @@ public class CocinaService {
         }
         
         OrdenPlatillo platillo = platilloOpt.get();
-        Usuario cocinero = cocineroOpt.get();
+        Usuario COCINERO = cocineroOpt.get();
 
-        if (cocinero.getRol() != RolUsuario.COCINERO && cocinero.getRol() != RolUsuario.ADMIN) {
+        if (COCINERO.getRol() != RolUsuario.COCINERO && COCINERO.getRol() != RolUsuario.ADMIN) {
             return false;
         }
         
@@ -90,7 +90,7 @@ public class CocinaService {
         }
         
         platillo.setEstadoPreparacion(EstadoPreparacion.en_cocina);
-        platillo.setCocineroAsignado(cocinero);
+        platillo.setCocineroAsignado(COCINERO);
         platillo.setHoraInicioPreparacion(LocalDateTime.now());
         ordenPlatilloRepository.save(platillo);
         

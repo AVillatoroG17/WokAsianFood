@@ -17,7 +17,8 @@ const DashboardPage: React.FC = () => {
             return;
         }
 
-        const userRolUpper = user.rol.toUpperCase();
+        // Aseguramos que el rol esté en mayúsculas para la comparación
+        const userRolUpper = user.rol.trim().toUpperCase();
 
         switch (userRolUpper) {
             case 'ADMIN':
@@ -29,13 +30,20 @@ const DashboardPage: React.FC = () => {
             case 'COCINERO':
                 navigate('/cocina/pedidos', { replace: true });
                 break;
-            case 'CAJERO': // ✅ NUEVO
-                navigate('/caja/facturacion', { replace: true });
-                break;
+            
+            // --- NUEVOS CASOS AÑADIDOS ---
             case 'ENCARGADO':
+                // Redirige al encargado a su página de inventario
                 navigate('/inventario/suministros', { replace: true });
                 break;
+            case 'CAJERO':
+                // Redirige al cajero a su módulo de facturación
+                navigate('/caja/facturacion', { replace: true });
+                break;
+            // -----------------------------
+                
             default:
+                // Si el rol existe pero no está mapeado, se redirige a una página de error o no autorizado.
                 navigate('/unauthorized', { replace: true });
                 break;
         }

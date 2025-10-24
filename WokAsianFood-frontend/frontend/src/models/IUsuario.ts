@@ -3,7 +3,7 @@ export interface IUsuario {
     nombreUsuario: string;
     nombreCompleto: string;
     email?: string;
-    rol: 'ADMIN' | 'MESERO' | 'COCINERO' | 'ENCARGADO';
+    rol: 'ADMIN' | 'MESERO' | 'COCINERO' | 'ENCARGADO' | 'CAJERO';
     activo: boolean;
     fechaCreacion: string;
     ultimoAcceso?: string;

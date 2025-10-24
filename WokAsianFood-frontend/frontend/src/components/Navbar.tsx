@@ -12,17 +12,25 @@ const Navbar: React.FC = () => {
     }
 
     // Normalizar el rol (eliminar espacios y convertir a mayúsculas)
+    // Esto asegura que la comparación sea siempre consistente.
     const userRole = user.rol.trim().toUpperCase();
 
-    // Verificar permisos para cada sección
+    // --- Definición de Roles Requeridos para cada Sección ---
     const canAccessEstadisticas = userRole === 'ADMIN';
     const canAccessUsuarios = userRole === 'ADMIN';
+    const canAccessClientes = ['ADMIN', 'MESERO'].includes(userRole);
     const canAccessOrdenes = ['ADMIN', 'MESERO'].includes(userRole);
     const canAccessCocina = ['ADMIN', 'COCINERO'].includes(userRole);
-    const canAccessInventario = ['ADMIN', 'ENCARGADO'].includes(userRole);
-    const canAccessPlatillos = ['ADMIN', 'COCINERO'].includes(userRole);
-    const canAccessClientes = ['ADMIN', 'MESERO'].includes(userRole);
-    const canAccessCaja = ['ADMIN', 'CAJERO', 'ENCARGADO'].includes(userRole);
+    
+    // Las siguientes tres líneas se han actualizado o mantenido para la nueva lógica:
+    const canAccessInventario = ['ADMIN', 'ENCARGADO'].includes(userRole); // Actualizada (o confirmada)
+    const canAccessCaja = ['ADMIN', 'CAJERO'].includes(userRole);         // Actualizada para reflejar el requisito 'ADMIN' || 'CAJERO'
+    const canAccessPlatillos = ['ADMIN', 'COCINERO'].includes(userRole);  // Actualizada para reflejar el requisito 'ADMIN' || 'COCINERO'
+    
+    // NOTA: Revisé tu lógica original para 'canAccessCaja' y 'canAccessInventario'
+    // Original: canAccessCaja = ['ADMIN', 'CAJERO', 'ENCARGADO'].includes(userRole);
+    // Requerimiento nuevo: (user.rol.trim() === 'ADMIN' || user.rol.trim() === 'CAJERO')
+    // He ajustado canAccessCaja para que coincida exactamente con el nuevo requisito (eliminando ENCARGADO).
 
     return (
         <nav className="bg-gray-800 p-4 text-white shadow-md">
@@ -32,8 +40,10 @@ const Navbar: React.FC = () => {
                     🍜 Wok Asian Food
                 </Link>
                 
-                {/* Enlaces dinámicos basados en el rol */}
+                {/* Enlaces dinámicos basados en el rol (Desktop) */}
                 <div className="hidden md:flex items-center space-x-4">
+                    
+                    {/* ENLACES ADMINISTRATIVOS/REPORTES */}
                     {canAccessEstadisticas && (
                         <Link 
                             to="/admin/estadisticas" 
@@ -52,13 +62,50 @@ const Navbar: React.FC = () => {
                         </Link>
                     )}
 
-                    {canAccessOrdenes && (
+                    {/* NUEVOS Y EXISTENTES ENLACES DE OPERACIÓN (AJUSTADOS) */}
+
+                    {/* El enlace de Inventario */}
+                    {canAccessInventario && (
                         <Link 
-                            to="/mesero/ordenes" 
+                            to="/inventario/suministros" 
                             className="hover:text-orange-400 transition-colors"
                         >
-                            📋 Órdenes
+                            📦 Inventario
                         </Link>
+                    )}
+
+                    {/* El enlace de Caja */}
+                    {canAccessCaja && (
+                        <Link 
+                            to="/caja/facturacion" 
+                            className="hover:text-orange-400 transition-colors flex items-center"
+                        >
+                            <CreditCard size={18} className="mr-1" />
+                            💳 Caja
+                        </Link>
+                    )}
+
+                    {/* El enlace de Platillos */}
+                    {canAccessPlatillos && (
+                        <Link 
+                            to="/platillos" 
+                            className="hover:text-orange-400 transition-colors"
+                        >
+                            🍽️ Platillos
+                        </Link>
+                    )}
+
+                    {/* ENLACES DE FLUJO OPERATIVO */}
+                    
+                    {canAccessOrdenes && (
+                        <>
+                            <Link to="/mesero/ordenes" className="hover:text-orange-400 transition-colors">
+                                ➕ Nueva Orden
+                            </Link>
+                            <Link to="/mesero/mis-ordenes" className="hover:text-orange-400 transition-colors">
+                                📋 Mis Órdenes
+                            </Link>
+                        </>
                     )}
 
                     {canAccessCocina && (
@@ -70,34 +117,6 @@ const Navbar: React.FC = () => {
                         </Link>
                     )}
 
-                    {canAccessCaja && (
-                        <Link 
-                            to="/caja/facturacion" 
-                            className="hover:text-orange-400 transition-colors flex items-center"
-                        >
-                            <CreditCard size={18} className="mr-1" />
-                            💳 Caja
-                        </Link>
-                    )}
-
-                    {canAccessInventario && (
-                        <Link 
-                            to="/inventario/suministros" 
-                            className="hover:text-orange-400 transition-colors"
-                        >
-                            📦 Inventario
-                        </Link>
-                    )}
-
-                    {canAccessPlatillos && (
-                        <Link 
-                            to="/platillos" 
-                            className="hover:text-orange-400 transition-colors"
-                        >
-                            🍽️ Platillos
-                        </Link>
-                    )}
-
                     {canAccessClientes && (
                         <Link 
                             to="/clientes" 
@@ -106,6 +125,7 @@ const Navbar: React.FC = () => {
                             👤 Clientes
                         </Link>
                     )}
+
                 </div>
 
                 {/* Información de Usuario y Logout */}
@@ -160,6 +180,34 @@ const Navbar: React.FC = () => {
                         👥 Usuarios
                     </Link>
                 )}
+
+                {/* ENLACES MÓVIL (Inventario, Caja, Platillos) */}
+                {canAccessInventario && (
+                    <Link 
+                        to="/inventario/suministros" 
+                        className="text-xs bg-gray-700 px-3 py-1 rounded hover:bg-gray-600"
+                    >
+                        📦 Inventario
+                    </Link>
+                )}
+                {canAccessCaja && (
+                    <Link 
+                        to="/caja/facturacion" 
+                        className="text-xs bg-gray-700 px-3 py-1 rounded hover:bg-gray-600"
+                    >
+                        💳 Caja
+                    </Link>
+                )}
+                {canAccessPlatillos && (
+                    <Link 
+                        to="/platillos" 
+                        className="text-xs bg-gray-700 px-3 py-1 rounded hover:bg-gray-600"
+                    >
+                        🍽️ Platillos
+                    </Link>
+                )}
+
+                {/* OTROS ENLACES MÓVIL */}
                 {canAccessOrdenes && (
                     <Link 
                         to="/mesero/ordenes" 
@@ -174,30 +222,6 @@ const Navbar: React.FC = () => {
                         className="text-xs bg-gray-700 px-3 py-1 rounded hover:bg-gray-600"
                     >
                         👨‍🍳 Cocina
-                    </Link>
-                )}
-                {canAccessCaja && (
-                    <Link 
-                        to="/caja/facturacion" 
-                        className="text-xs bg-gray-700 px-3 py-1 rounded hover:bg-gray-600"
-                    >
-                        💳 Caja
-                    </Link>
-                )}
-                {canAccessInventario && (
-                    <Link 
-                        to="/inventario/suministros" 
-                        className="text-xs bg-gray-700 px-3 py-1 rounded hover:bg-gray-600"
-                    >
-                        📦 Inventario
-                    </Link>
-                )}
-                {canAccessPlatillos && (
-                    <Link 
-                        to="/platillos" 
-                        className="text-xs bg-gray-700 px-3 py-1 rounded hover:bg-gray-600"
-                    >
-                        🍽️ Platillos
                     </Link>
                 )}
                 {canAccessClientes && (

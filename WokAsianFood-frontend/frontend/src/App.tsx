@@ -1,7 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
-
 import FacturacionPage from './pages/FacturacionPage';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
@@ -14,10 +13,9 @@ import PedidosPage from './pages/cocina/PedidosPage';
 import SuministrosPage from './pages/inventario/SuministrosPage';
 import ClientesPage from './pages/ClientesPage';
 import PlatillosCRUDPage from './pages/platillos/PlatillosCRUDPage';
-
-// Componentes
 import Navbar from './components/Navbar';
 import ProtectedRoute from './router/ProtectedRoute';
+import MisOrdenesPage from './pages/mesero/MisOrdenesPage';
 
 // Layout principal que incluye el Navbar para las páginas internas
 const MainLayout: React.FC<{ children: JSX.Element }> = ({ children }) => (
@@ -44,70 +42,70 @@ const App: React.FC = () => {
                     {/* ============================================ */}
 
                     {/* Dashboard - Redirige según el rol del usuario */}
-                    <Route 
-                        path="/" 
+                    <Route
+                        path="/"
                         element={
                             <ProtectedRoute>
                                 <DashboardPage />
                             </ProtectedRoute>
-                        } 
+                        }
                     />
-                    <Route 
-                        path="/dashboard" 
+                    <Route
+                        path="/dashboard"
                         element={
                             <ProtectedRoute>
                                 <DashboardPage />
                             </ProtectedRoute>
-                        } 
+                        }
                     />
 
                     {/* ============================================ */}
                     {/* RUTAS DE ADMINISTRADOR                        */}
                     {/* ============================================ */}
-                    <Route 
-                        path="/admin/estadisticas" 
+                    <Route
+                        path="/admin/estadisticas"
                         element={
                             <ProtectedRoute allowedRoles={['ADMIN']}>
                                 <MainLayout>
                                     <EstadisticasPage />
                                 </MainLayout>
                             </ProtectedRoute>
-                        } 
+                        }
                     />
-                    <Route 
-                        path="/admin/usuarios/nuevo" 
+                    <Route
+                        path="/admin/usuarios/nuevo"
                         element={
                             <ProtectedRoute allowedRoles={['ADMIN']}>
                                 <MainLayout>
                                     <RegisterPage />
                                 </MainLayout>
                             </ProtectedRoute>
-                        } 
+                        }
                     />
-                    <Route 
-                        path="/admin/usuarios" 
+                    <Route
+                        path="/admin/usuarios"
                         element={
                             <ProtectedRoute allowedRoles={['ADMIN']}>
                                 <MainLayout>
                                     <GestionUsuariosPage />
                                 </MainLayout>
                             </ProtectedRoute>
-                        } 
+                        }
                     />
 
                     {/* ============================================ */}
                     {/* RUTA DE CAJA / FACTURACIÓN                   */}
                     {/* Acceso: ADMIN, CAJERO, ENCARGADO             */}
                     {/* ============================================ */}
-                    <Route 
-                        path="/caja/facturacion" 
+                    <Route
+                        path="/caja/facturacion"
                         element={
                             <ProtectedRoute allowedRoles={['ADMIN', 'CAJERO', 'ENCARGADO']}>
                                 <MainLayout>
                                     <FacturacionPage />
                                 </MainLayout>
                             </ProtectedRoute>
-                        } 
+                        }
                     />
 
                     {/* ============================================ */}
@@ -115,69 +113,80 @@ const App: React.FC = () => {
                     {/* ============================================ */}
 
                     {/* Gestión de Platillos - Admin y Cocinero */}
-                    <Route 
-                        path="/platillos" 
+                    <Route
+                        path="/platillos"
                         element={
                             <ProtectedRoute allowedRoles={['ADMIN', 'COCINERO']}>
                                 <MainLayout>
                                     <PlatillosCRUDPage />
                                 </MainLayout>
                             </ProtectedRoute>
-                        } 
+                        }
                     />
 
                     {/* Gestión de Clientes - Admin y Mesero */}
-                    <Route 
-                        path="/clientes" 
+                    <Route
+                        path="/clientes"
                         element={
                             <ProtectedRoute allowedRoles={['ADMIN', 'MESERO']}>
                                 <MainLayout>
                                     <ClientesPage />
                                 </MainLayout>
                             </ProtectedRoute>
-                        } 
+                        }
                     />
 
                     {/* ============================================ */}
                     {/* RUTAS DE MESERO                              */}
                     {/* ============================================ */}
-                    <Route 
-                        path="/mesero/ordenes" 
+                    <Route
+                        path="/mesero/ordenes"
                         element={
                             <ProtectedRoute allowedRoles={['ADMIN', 'MESERO']}>
                                 <MainLayout>
                                     <OrdenesPage />
                                 </MainLayout>
                             </ProtectedRoute>
-                        } 
+                        }
                     />
 
                     {/* ============================================ */}
                     {/* RUTAS DE COCINA                              */}
                     {/* ============================================ */}
-                    <Route 
-                        path="/cocina/pedidos" 
+                    <Route
+                        path="/cocina/pedidos"
                         element={
                             <ProtectedRoute allowedRoles={['ADMIN', 'COCINERO']}>
                                 <MainLayout>
                                     <PedidosPage />
                                 </MainLayout>
                             </ProtectedRoute>
-                        } 
+                        }
                     />
 
                     {/* ============================================ */}
                     {/* RUTAS DE INVENTARIO                          */}
                     {/* ============================================ */}
-                    <Route 
-                        path="/inventario/suministros" 
+                    <Route
+                        path="/inventario/suministros"
                         element={
                             <ProtectedRoute allowedRoles={['ADMIN', 'ENCARGADO']}>
                                 <MainLayout>
                                     <SuministrosPage />
                                 </MainLayout>
                             </ProtectedRoute>
-                        } 
+                        }
+                    />
+
+                    <Route
+                        path="/mesero/mis-ordenes"
+                        element={
+                            <ProtectedRoute allowedRoles={['ADMIN', 'MESERO']}>
+                                <MainLayout>
+                                    <MisOrdenesPage />
+                                </MainLayout>
+                            </ProtectedRoute>
+                        }
                     />
 
                     {/* ============================================ */}

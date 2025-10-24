@@ -1,21 +1,24 @@
 import api from './api';
 
-// Asumo que tienes estas interfaces definidas en otro lugar
-interface IOrdenInput {
-    mesaId: number;
-    meseroId: number;
-    // ... otros campos del DTO
-}
-
-interface IOrdenOutput {
+export interface IOrden {
     ordenId: number;
     numeroOrden: string;
-    // ... otros campos
+    estadoOrden: string; // Ejemplo: 'ABIERTA', 'LISTA_PARA_SERVIR', 'SERVIDA', 'LISTA_PARA_PAGO'
+    
 }
 
 const API_URL = '/api/ordenes';
 
-export const createOrden = async (ordenData: IOrdenInput): Promise<IOrdenOutput> => {
-    const response = await api.post<IOrdenOutput>(API_URL, ordenData);
+export const marcarOrdenComoServida = async (ordenId: number, meseroId: number): Promise<IOrden> => {
+    // Usamos PATCH y pasamos meseroId como Query Parameter
+    const response = await api.patch<IOrden>(`${API_URL}/${ordenId}/servida`, {}, {
+        params: { meseroId }
+    });
+    return response.data;
+};
+
+export const solicitarPagoOrden = async (ordenId: number): Promise<IOrden> => {
+    // Usamos PATCH
+    const response = await api.patch<IOrden>(`${API_URL}/${ordenId}/solicitar-pago`);
     return response.data;
 };

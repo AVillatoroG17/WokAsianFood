@@ -160,4 +160,25 @@ public class OrdenController {
             return ResponseEntity.notFound().build();
         }
     }
+
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_MESERO')")
+    @PatchMapping("/{id}/solicitar-pago")
+    public ResponseEntity<?> marcarListaParaPago(
+            @PathVariable Integer id) {
+        try {
+            // Llama al nuevo método del servicio para pasar a LISTA_PARA_PAGO
+            estadoOrdenService.marcarListaParaPago(id);
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Orden marcada como lista para pago"));
+        } catch (IllegalStateException e) {
+            // Error de negocio: La orden no estaba en el estado correcto (SERVIDA)
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", e.getMessage()));
+        } catch (IllegalArgumentException e) {
+            // Error de recurso no encontrado
+            return ResponseEntity.notFound().build();
+        }
+    }
 }

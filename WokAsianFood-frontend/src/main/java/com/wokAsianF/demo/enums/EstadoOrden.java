@@ -6,6 +6,9 @@ public enum EstadoOrden {
     abierta,        // Open
     pagada,         // Paid
     cancelada,      // Canceled
+    lista,
+    entregada,
+    lista_para_pago,
 
     // Estados de preparación y servicio
     enviada_cocina, // Sent to kitchen

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useReducer, useMemo } from 'react';
 import { FaPlus, FaMinus, FaTrash, FaShoppingCart, FaMotorcycle, FaStore, FaCheckCircle, FaArrowLeft } from 'react-icons/fa';
-import { createOrden } from '../../services/ordenService';
+//import { createOrden } from '../../services/ordenService';
 import { getMesas } from '../../services/mesaService';
 import { getPlatillos } from '../../services/platilloService';
 import { useAuth } from '../../context/AuthContext';
@@ -174,9 +174,9 @@ const OrdenesPage: React.FC = () => {
         try {
             console.log('📤 Enviando orden:', ordenDTO);
             console.log('👤 Usuario actual:', user); // Para debug
-            const nuevaOrden = await createOrden(ordenDTO);
-            console.log('✅ Orden creada:', nuevaOrden);
-            setLastOrder(nuevaOrden.numeroOrden);
+          //  const nuevaOrden = await createOrden(ordenDTO);
+          //  console.log('✅ Orden creada:', nuevaOrden);
+           // setLastOrder(nuevaOrden.numeroOrden);
             setStep(4);
         } catch (error: any) {
             console.error("❌ Error completo:", error);

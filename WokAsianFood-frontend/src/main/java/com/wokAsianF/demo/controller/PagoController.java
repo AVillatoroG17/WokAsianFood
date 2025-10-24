@@ -1,70 +1,52 @@
 package com.wokAsianF.demo.controller;
 
-import com.wokAsianF.demo.DTOs.PagoRequestDTO;
+import com.wokAsianF.demo.DTOs.OrdenDTO;
+import com.wokAsianF.demo.entity.Orden;
 import com.wokAsianF.demo.entity.Pago;
-import com.wokAsianF.demo.service.PagoService;
-import com.wokAsianF.demo.enums.MetodoPago;
-import com.wokAsianF.demo.enums.TipoPago;
+import com.wokAsianF.demo.enums.EstadoOrden;
+import com.wokAsianF.demo.repository.OrdenRepository;
+import com.wokAsianF.demo.repository.PagoRepository;
+import com.wokAsianF.demo.service.OrdenService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.math.BigDecimal;
-import java.util.Map;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
-@CrossOrigin(origins = "http://localhost:5173")
 @RequestMapping("/api/pagos")
 public class PagoController {
 
     @Autowired
-    private PagoService pagoService;
+    private OrdenService ordenService;
+    
+    @Autowired
+    private OrdenRepository ordenRepository;
+    
+    @Autowired
+    private PagoRepository pagoRepository;
 
-    /**
-     * Endpoint para procesar el pago de una orden
-     * 
-     * POST /api/pagos
-     * Body: {
-     *   "ordenId": 1,
-     *   "cajeroId": 1,
-     *   "metodoPago": "efectivo",
-     *   "tipoPago": "grupal",
-     *   "montoEfectivo": 100.00,
-     *   "montoTarjeta": 0,
-     *   "referenciaTransaccion": "REF-12345",
-     *   "notasPago": "Pago completo"
-     * }
-     */
-
-   @PostMapping
-public ResponseEntity<?> procesarPago(@RequestBody PagoRequestDTO pagoRequest) { // ¡Cambiamos Map por DTO!
-    try {
-        // ✅ Todo el código de conversión/casteo desaparece.
-        // Spring se encarga de que ya sean los tipos correctos.
-        Pago pago = pagoService.procesarPago(
-            pagoRequest.getOrdenId(), 
-            pagoRequest.getCajeroId(), 
-            pagoRequest.getMetodoPago(), 
-            pagoRequest.getTipoPago(),
-            pagoRequest.getMontoEfectivo(), 
-            pagoRequest.getMontoTarjeta(),
-            pagoRequest.getReferenciaTransaccion(), 
-            pagoRequest.getNotasPago()
+    @GetMapping("/ordenes-facturables")
+    public ResponseEntity<List<OrdenDTO>> getOrdenesFacturables() {
+        List<EstadoOrden> estadosFacturables = List.of(
+            EstadoOrden.lista, 
+            EstadoOrden.entregada
         );
-        
-        return ResponseEntity.ok(Map.of(
-            "success", true,
-            "message", "Pago procesado exitosamente",
-            "pagoId", pago.getPagoId(),
-            "cambio", pago.getCambio()
-        ));
-        
-    } catch (IllegalArgumentException | IllegalStateException e) {
-        // ... manejo de errores
-        return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
-    } catch (Exception e) {
-        // ... manejo de errores 500
-        return ResponseEntity.status(500).body(Map.of("success", false, "message", "Error al procesar el pago: " + e.getMessage()));
+        List<Orden> ordenes = ordenRepository.findByEstadoOrdenIn(estadosFacturables);
+        List<OrdenDTO> ordenesDTO = ordenes.stream()
+            .map(orden -> ordenService.convertirAOrdenDTO(orden))
+            .collect(Collectors.toList());
+        return ResponseEntity.ok(ordenesDTO);
     }
-}
+
+    @PostMapping
+    public ResponseEntity<Pago> crearPago(@RequestBody Pago pago) {
+        Pago nuevoPago = pagoRepository.save(pago);
+        Orden orden = ordenRepository.findById(pago.getOrden().getOrdenId()).orElse(null);
+        if (orden != null) {
+            orden.setEstadoOrden(EstadoOrden.pagada);
+            ordenRepository.save(orden);
+        }
+        return ResponseEntity.ok(nuevoPago);
+    }
 }
