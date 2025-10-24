@@ -16,21 +16,18 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/pagos")
 public class PagoController {
-
     @Autowired
     private OrdenService ordenService;
-    
     @Autowired
     private OrdenRepository ordenRepository;
-    
     @Autowired
     private PagoRepository pagoRepository;
 
     @GetMapping("/ordenes-facturables")
     public ResponseEntity<List<OrdenDTO>> getOrdenesFacturables() {
         List<EstadoOrden> estadosFacturables = List.of(
-            EstadoOrden.lista, 
-            EstadoOrden.entregada
+            EstadoOrden.servida, 
+            EstadoOrden.lista_para_pago
         );
         List<Orden> ordenes = ordenRepository.findByEstadoOrdenIn(estadosFacturables);
         List<OrdenDTO> ordenesDTO = ordenes.stream()

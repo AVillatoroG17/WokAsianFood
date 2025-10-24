@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { Navigate, useLocation } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 
-type Role = 'ADMIN' | 'MESERO' | 'COCINERO' | 'ENCARGADO' | 'CAJERO';
+type Role = 'ADMIN' | 'MESERO' | 'COCINERO' | 'ENCARGADO' | 'CAJERO'; 
 
 interface ProtectedRouteProps {
   children: JSX.Element;
@@ -26,9 +26,15 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles 
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // LA SOLUCIÓN DEFINITIVA: Usar .trim() para eliminar espacios en blanco invisibles.
-  if (allowedRoles && user && !allowedRoles.includes(user.rol.trim() as Role)) {
-    return <Navigate to="/unauthorized" replace />;
+  if (allowedRoles && user) {
+    
+    const normalizedUserRole = user.rol.trim().toUpperCase(); 
+
+    const normalizedAllowedRoles = allowedRoles.map(r => r.toUpperCase());
+
+    if (!normalizedAllowedRoles.includes(normalizedUserRole)) {
+      return <Navigate to="/unauthorized" replace />;
+    }
   }
 
   return children;

@@ -343,4 +343,10 @@ public class OrdenService {
             }
         }
     }
+
+    public Integer obtenerMeseroIdPorNombre(String nombreCompleto) {
+        return usuarioRepository.findByNombreCompleto(nombreCompleto)
+                .map(Usuario::getUsuarioId)
+                .orElse(null);
+    }
 }

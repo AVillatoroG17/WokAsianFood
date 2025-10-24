@@ -33,8 +33,8 @@ public class OrdenPlatillo {
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal subtotal;
 
-    @Convert(converter = EstadoPreparacionConverter.class) // <-- AÑADIR ESTA LÍNEA
-    @Column(name = "estado_preparacion", columnDefinition = "varchar default 'pendiente'")
+    @Enumerated(EnumType.STRING)
+    @Column(name = "estado_preparacion")
     private EstadoPreparacion estadoPreparacion = EstadoPreparacion.pendiente;
 
     @Column(name = "hora_envio_cocina")
@@ -59,7 +59,7 @@ public class OrdenPlatillo {
     @Enumerated(EnumType.STRING)
     @Column(name = "prioridad")
     private Prioridad prioridad;
-    
+
     public OrdenPlatillo() {
     }
 
