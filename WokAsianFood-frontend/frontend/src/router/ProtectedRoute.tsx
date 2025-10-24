@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { Navigate, useLocation } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 
-type Role = 'ADMIN' | 'MESERO' | 'COCINERO' | 'ENCARGADO';
+type Role = 'ADMIN' | 'MESERO' | 'COCINERO' | 'ENCARGADO' | 'CAJERO';
 
 interface ProtectedRouteProps {
   children: JSX.Element;

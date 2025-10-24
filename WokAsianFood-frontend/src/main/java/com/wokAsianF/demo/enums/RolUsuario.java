@@ -1,5 +1,9 @@
 package com.wokAsianF.demo.enums;
 
 public enum RolUsuario {
-    ADMIN, CAJERO, COCINERO, MESERO, CLIENTE, ENCARGADO
+    ADMIN,      
+    CAJERO,     
+    COCINERO,   
+    MESERO,    
+    ENCARGADO   
 }

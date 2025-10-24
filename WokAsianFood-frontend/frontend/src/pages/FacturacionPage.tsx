@@ -1,24 +1,27 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { FaSearch, FaMoneyBillWave, FaCreditCard, FaReceipt, FaUsers, FaUser, FaCheckCircle, FaSpinner, FaPrint } from 'react-icons/fa';
-import { useAuth } from '../context/AuthContext.tsx';
+import { useAuth } from '../context/AuthContext';
 import { Navigate } from 'react-router-dom';
-import jsPDF from 'jspdf';
+import { FaSearch, FaReceipt, FaCheckCircle, FaSpinner, FaMoneyBillWave, FaCreditCard, FaPrint, FaUsers } from 'react-icons/fa';
+import api from '../services/api'; // ✅ Asumimos que este servicio ya está configurado con el token
+import jsPDF from 'jspdf'; // Para la generación del recibo
 
-// --- INTERFACES TYPESCRIPT ---
+// --- INTERFACES TYPESCRIPT (Compartidas con el Backend/Detalle) ---
 interface IOrdenPlatillo {
     ordenPlatilloId: number;
     nombrePlatillo: string;
     cantidad: number;
     precioUnitario: number;
     subtotal: number;
-    pagado?: boolean;
+    // La propiedad 'pagado' no se usa en este flujo, la quitamos para limpiar.
 }
 
-interface IOrden {
+// Interfaz detallada (usada en el Modal)
+interface IOrdenDetalle {
     ordenId: number;
     numeroOrden: string;
     numeroMesa?: string;
     nombreMesero?: string;
+    nombreCliente?: string;
     fechaOrden: string;
     subtotal: number;
     impuestos: number;
@@ -28,10 +31,21 @@ interface IOrden {
     platillos: IOrdenPlatillo[];
 }
 
+// Interfaz para la lista de órdenes (usada en la vista principal)
+interface OrdenFacturable {
+    ordenId: number;
+    numeroOrden: string;
+    numeroMesa?: string;
+    nombreCliente?: string;
+    totalOrden: number;
+    fechaOrden: string;
+    numeroPersonas: number;
+}
+
+// Tipos de Pago y Respuesta
 type PaymentType = 'grupal' | 'dividido' | 'individual';
 type PaymentMethod = 'efectivo' | 'tarjeta' | 'transferencia' | 'mixto';
 
-// Interfaz para el objeto de respuesta del pago (del backend)
 interface IPagoResponse {
     success: boolean;
     message: string;
@@ -39,76 +53,61 @@ interface IPagoResponse {
     cambio: number;
 }
 
-// --- SIMULACIÓN Y CAPA DE API ---
+// --- GENERACIÓN DE RECIBO PDF ---
 
-const mockOrdenesFacturables: Partial<IOrden>[] = [
-    { ordenId: 36, numeroOrden: 'ORD-001', numeroMesa: '5', totalOrden: 89.60 }, 
-    { ordenId: 102, numeroOrden: 'ORD-002', numeroMesa: '3', totalOrden: 120.10 },
-    { ordenId: 103, numeroOrden: 'ORD-003', numeroMesa: '8', totalOrden: 33.00 },
-];
-
-const mockOrdenDetalle: IOrden = {
-    ordenId: 36,
-    numeroOrden: 'ORD-001',
-    numeroMesa: '5',
-    nombreMesero: 'Carlos',
-    fechaOrden: new Date().toISOString(),
-    numeroPersonas: 2,
-    subtotal: 80.00,
-    impuestos: 9.60,
-    descuento: 0,
-    totalOrden: 89.60,
-    platillos: [
-        { ordenPlatilloId: 2, nombrePlatillo: 'Pad Thai', cantidad: 1, precioUnitario: 40.00, subtotal: 40.00 },
-        { ordenPlatilloId: 3, nombrePlatillo: 'Ramen Tonkotsu', cantidad: 1, precioUnitario: 40.00, subtotal: 40.00 },
-    ]
-};
-
-// 🔑 CLAVE: La función 'api' recibe el token de autenticación.
-const api = (token: string) => ({
-    getOrdenesFacturables: async (): Promise<Partial<IOrden>[]> => {
-        // En una app real, usarías el token aquí para llamar al backend.
-        return new Promise(res => setTimeout(() => res(mockOrdenesFacturables), 500));
-    },
-    getOrdenDetalle: async (ordenId: number): Promise<IOrden> => {
-        return new Promise(res => setTimeout(() => res(mockOrdenDetalle), 500));
-    },
-    // 🔥 FUNCIÓN CRÍTICA: LLAMADA REAL A /api/pagos
-    createPago: async (pagoData: any): Promise<IPagoResponse> => {
-        console.log('API POST: /api/pagos (Real Call)', pagoData);
-        
-        const response = await fetch('http://localhost:8080/api/pagos', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}` // 🔑 ¡El Token de Autorización es esencial!
-            },
-            body: JSON.stringify(pagoData)
-        });
-
-        if (!response.ok) {
-            const errorBody = await response.json();
-            throw new Error(errorBody.message || `Error ${response.status}: Fallo en el servidor.`);
-        }
-
-        // El backend devuelve el objeto { success, message, pagoId, cambio }
-        return await response.json(); 
-    }
-});
-
-
-// --- GENERACIÓN DE RECIBO PDF (Sin Cambios) ---
-
-const generarReciboPDF = (orden: IOrden, pagoData: any, cambioFinal: number) => {
-    // ... (Tu código de generación de PDF va aquí)
+const generarReciboPDF = (orden: IOrdenDetalle, pagoData: any, cambioFinal: number) => {
+    // Implementación real de jsPDF, simplificada por espacio
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: [80, 220] });
     let y = 10;
     const lineHeight = 5;
     const margin = 5;
-    const center = 40;
     const right = 75;
 
-    // ... [CÓDIGO DE RECIBO OMITIDO POR ESPACIO] ...
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Wok Asian Fusion', 40, y, { align: 'center' });
+    y += lineHeight + 1;
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Recibo: ${orden.numeroOrden}`, margin, y);
+    y += lineHeight;
+    doc.text(`Mesa: ${orden.numeroMesa || 'N/A'}`, margin, y);
+    y += lineHeight;
+    doc.text(`Fecha: ${new Date().toLocaleDateString()}`, margin, y);
+    y += lineHeight;
+
+    doc.line(margin, y, right, y);
+    y += lineHeight;
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('Producto', margin, y);
+    doc.text('Subtotal', right, y, { align: 'right' });
+    y += lineHeight;
+
+    doc.setFont('helvetica', 'normal');
+    orden.platillos.forEach(p => {
+        doc.text(`${p.cantidad}x ${p.nombrePlatillo}`, margin, y);
+        doc.text(`Q${p.subtotal.toFixed(2)}`, right, y, { align: 'right' });
+        y += lineHeight;
+    });
+
+    doc.line(margin, y, right, y);
+    y += lineHeight;
+
+    doc.setFont('helvetica', 'normal');
+    doc.text('Subtotal:', margin, y);
+    doc.text(`Q${orden.subtotal.toFixed(2)}`, right, y, { align: 'right' });
+    y += lineHeight;
+    doc.text('Impuestos:', margin, y);
+    doc.text(`Q${orden.impuestos.toFixed(2)}`, right, y, { align: 'right' });
+    y += lineHeight;
+
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('TOTAL:', margin, y);
+    doc.text(`Q${orden.totalOrden.toFixed(2)}`, right, y, { align: 'right' });
+    y += lineHeight + 2;
 
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
@@ -123,163 +122,101 @@ const generarReciboPDF = (orden: IOrden, pagoData: any, cambioFinal: number) => 
         doc.text(`Q${cambioFinal.toFixed(2)}`, right, y, { align: 'right' });
         y += lineHeight;
     }
-    // ... [CÓDIGO DE RECIBO OMITIDO POR ESPACIO] ...
+    
+    doc.text(`¡Gracias por su visita!`, 40, y + 5, { align: 'center' });
 
     doc.save(`Recibo-${orden.numeroOrden}.pdf`);
 };
 
-
-// --- COMPONENTE PRINCIPAL FacturacionPage ---
-
-const FacturacionPage: React.FC = () => {
-    const { user } = useAuth();
-    const [orders, setOrders] = useState<Partial<IOrden>[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [selectedOrder, setSelectedOrder] = useState<IOrden | null>(null);
-    const [isModalOpen, setIsModalOpen] = useState(false);
-
-    // Asumimos que el token existe si el usuario existe
-    const token = user?.token || '';
-    const cajeroId = user?.usuarioId || 0;
-    
-    // Inicializamos la API con el token
-    const realApi = useMemo(() => api(token), [token]);
-
-    const hasAccess = useMemo(() => user && (user.rol?.trim() === 'ADMINISTRADOR' || user.rol?.trim() === 'MESERO'), [user]);
-
-    const fetchOrders = async () => {
-        if (!token) return;
-        setLoading(true);
-        try {
-            const data = await realApi.getOrdenesFacturables();
-            setOrders(data);
-        } catch (e) {
-            console.error("Error al cargar órdenes:", e);
-        }
-        setLoading(false);
-    };
-
-    useEffect(() => {
-        if (hasAccess) {
-            fetchOrders();
-        }
-    }, [hasAccess]);
-
-    const handleOpenModal = async (orderId: number) => {
-        setIsModalOpen(true);
-        try {
-            const details = await realApi.getOrdenDetalle(orderId);
-            setSelectedOrder(details);
-        } catch (e) {
-            console.error("Error al obtener detalle:", e);
-        }
-    };
-
-    const handleCloseModal = () => {
-        setIsModalOpen(false);
-        setSelectedOrder(null);
-    };
-
-    const filteredOrders = useMemo(() =>
-        orders.filter(o =>
-            o.numeroOrden?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            o.numeroMesa?.toLowerCase().includes(searchTerm.toLowerCase())
-        ), [orders, searchTerm]);
-
-    if (!hasAccess) {
-        return <Navigate to="/unauthorized" replace />;
-    }
-
-    return (
-        <div className="p-4 md:p-8 bg-gray-100 min-h-screen">
-            {/* ... (Tu JSX de la página principal de Facturación) ... */}
-
-            {isModalOpen && selectedOrder && (
-                <BillingModal 
-                    order={selectedOrder} 
-                    onClose={handleCloseModal} 
-                    onPaymentSuccess={fetchOrders} 
-                    token={token} // Pasamos el token
-                    cajeroId={cajeroId} // Pasamos el ID del cajero
-                />
-            )}
-        </div>
-    );
-};
-
-
-// --- COMPONENTE BillingModal ---
+// --- COMPONENTE BillingModal (Adaptado para usar el servicio 'api') ---
 
 interface BillingModalProps {
-    order: IOrden;
-    onClose: () => void;
-    onPaymentSuccess: () => void;
-    token: string;
+    orden: OrdenFacturable; // Solo la data base
     cajeroId: number;
+    onClose: () => void;
+    onPagoExitoso: () => void;
 }
 
-const BillingModal: React.FC<BillingModalProps> = ({ order, onClose, onPaymentSuccess, token, cajeroId }) => {
+const BillingModal: React.FC<BillingModalProps> = ({ orden, cajeroId, onClose, onPagoExitoso }) => {
     const [paymentType, setPaymentType] = useState<PaymentType>('grupal');
     const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('efectivo');
     const [cashReceived, setCashReceived] = useState(0); 
+    const [orderDetail, setOrderDetail] = useState<IOrdenDetalle | null>(null);
+    const [loadingDetail, setLoadingDetail] = useState(true);
     const [paymentStatus, setPaymentStatus] = useState<'pending' | 'processing' | 'success'>('pending');
-    const [finalPagoData, setFinalPagoData] = useState<IPagoResponse & { totalOrden: number, montoEfectivo: number } | null>(null);
+    const [finalPagoData, setFinalPagoData] = useState<IPagoResponse & { totalOrden: number, montoEfectivo: number, metodoPago: string } | null>(null);
     const [error, setError] = useState<string | null>(null);
 
-    const realApi = useMemo(() => api(token), [token]);
+    const total = orderDetail?.totalOrden || orden.totalOrden;
+    const minCash = total;
+    const cambio = Math.max(0, cashReceived - total);
+    
+    // 1. Cargar detalles de la orden al abrir el modal
+    useEffect(() => {
+        const fetchDetail = async () => {
+            try {
+                const response = await api.get<IOrdenDetalle>(`/api/ordenes/${orden.ordenId}`);
+                setOrderDetail(response.data);
+                setCashReceived(response.data.totalOrden); // Inicializa el monto recibido al total
+            } catch (e) {
+                console.error("Error al obtener detalle:", e);
+                setError("Error al cargar detalles de la orden.");
+            } finally {
+                setLoadingDetail(false);
+            }
+        };
+        fetchDetail();
+    }, [orden.ordenId]);
 
-    const subtotal = useMemo(() => order.subtotal, [order]); // Simplificado, asume pago total
-    const discount = order.descuento || 0;
-    const total = order.totalOrden;
 
     const handleConfirmPayment = async () => {
+        if (!orderDetail) return;
+
         setError(null);
         setPaymentStatus('processing');
         
         const isEfectivo = paymentMethod === 'efectivo';
 
-        // 🎯 PAYLOAD CRÍTICO: 8 CAMPOS EXACTOS (como tu PagoRequestDTO)
+        if (isEfectivo && cashReceived < minCash) {
+            setError("El monto recibido en efectivo es menor al total de la orden.");
+            setPaymentStatus('pending');
+            return;
+        }
+
+        // 🎯 PAYLOAD CRÍTICO para /api/pagos
         const payload = {
-            ordenId: order.ordenId,
+            ordenId: orderDetail.ordenId,
             cajeroId: cajeroId, 
-            
-            // Usamos mayúsculas para coincidir con tus Enums de Java
             metodoPago: paymentMethod.toUpperCase(), 
             tipoPago: paymentType.toUpperCase(), 
-            
-            // Lógica de montos
             montoEfectivo: isEfectivo ? cashReceived : 0, 
             montoTarjeta: !isEfectivo ? total : 0, 
-            
-            // Valores por defecto
             referenciaTransaccion: !isEfectivo ? `TXN-${new Date().getTime()}` : null, 
-            notasPago: `Pago cerrado por Cajero ID: ${cajeroId}` 
+            notasPago: `Pago cerrado por Cajero ID: ${cajeroId} para mesa ${orden.numeroMesa}` 
         };
 
         try {
-            const response = await realApi.createPago(payload);
+            const response = await api.post<IPagoResponse>('/api/pagos', payload);
             
-            // Guardamos la respuesta del backend junto con el total de la orden
             setFinalPagoData({ 
-                ...response, 
+                ...response.data, 
                 totalOrden: total,
-                montoEfectivo: payload.montoEfectivo
+                montoEfectivo: payload.montoEfectivo,
+                metodoPago: payload.metodoPago
             }); 
             setPaymentStatus('success');
-            onPaymentSuccess(); 
+            onPagoExitoso(); 
             
-        } catch (e) {
+        } catch (e: any) {
             console.error("Error al procesar el pago:", e);
-            const errMsg = e instanceof Error ? e.message : String(e);
-            setError(errMsg || 'Error desconocido al confirmar el pago.');
+            const errMsg = e.response?.data?.message || e.message || 'Error desconocido al confirmar el pago.';
+            setError(errMsg);
             setPaymentStatus('pending'); 
         }
     };
     
-    // ... (Manejo de estados y JSX para el modal)
-    
-    if (paymentStatus === 'success' && finalPagoData) {
+    // Renderizado del Modal de Éxito
+    if (paymentStatus === 'success' && finalPagoData && orderDetail) {
         const cambioFinal = finalPagoData.cambio;
         
         return (
@@ -290,7 +227,7 @@ const BillingModal: React.FC<BillingModalProps> = ({ order, onClose, onPaymentSu
                     <p className="text-gray-600 mb-6">Cambio a entregar: Q{cambioFinal.toFixed(2)}</p>
                     <div className="flex flex-col space-y-4">
                         <button 
-                            onClick={() => generarReciboPDF(order, finalPagoData, cambioFinal)}
+                            onClick={() => generarReciboPDF(orderDetail, finalPagoData, cambioFinal)}
                             className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 flex items-center justify-center">
                             <FaPrint className="mr-2" /> Imprimir Recibo
                         </button>
@@ -305,26 +242,38 @@ const BillingModal: React.FC<BillingModalProps> = ({ order, onClose, onPaymentSu
         )
     }
 
+    if (loadingDetail) {
+        return (
+            <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50 p-4">
+                <div className="bg-white p-8 rounded-lg shadow-2xl text-center">
+                    <FaSpinner className="animate-spin text-4xl text-blue-600 mb-4" />
+                    <p className="font-semibold">Cargando detalles de la orden...</p>
+                </div>
+            </div>
+        );
+    }
+    
+    // Renderizado del Modal de Pago
     return (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50 p-4">
             <div className="bg-white rounded-lg shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col">
                 <header className="p-4 border-b">
-                    <h2 className="text-2xl font-bold">Factura Orden: {order.numeroOrden} (Mesa {order.numeroMesa})</h2>
+                    <h2 className="text-2xl font-bold">Factura Orden: {orden.numeroOrden} (Mesa {orden.numeroMesa})</h2>
                 </header>
 
                 <main className="p-6 overflow-y-auto flex-grow grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* --- PANEL DE ORDEN/DETALLE --- */}
                     <div className="space-y-4">
                         <h3 className="text-xl font-semibold border-b pb-2">Detalle de la Orden</h3>
-                        {order.platillos.map(p => (
+                        {orderDetail?.platillos.map(p => (
                             <div key={p.ordenPlatilloId} className="flex justify-between items-center text-sm">
                                 <span>{p.cantidad}x {p.nombrePlatillo}</span>
                                 <span className="font-medium">Q{(p.subtotal).toFixed(2)}</span>
                             </div>
                         ))}
                         <div className="border-t pt-2 space-y-1">
-                            <div className="flex justify-between"><span>Subtotal:</span><span>Q{order.subtotal.toFixed(2)}</span></div>
-                            <div className="flex justify-between"><span>Impuestos:</span><span>Q{order.impuestos.toFixed(2)}</span></div>
+                            <div className="flex justify-between"><span>Subtotal:</span><span>Q{orderDetail?.subtotal.toFixed(2)}</span></div>
+                            <div className="flex justify-between"><span>Impuestos:</span><span>Q{orderDetail?.impuestos.toFixed(2)}</span></div>
                             <div className="flex justify-between font-bold text-xl"><span>TOTAL:</span><span className="text-green-600">Q{total.toFixed(2)}</span></div>
                         </div>
                     </div>
@@ -347,7 +296,7 @@ const BillingModal: React.FC<BillingModalProps> = ({ order, onClose, onPaymentSu
                         {/* Método de Pago */}
                         <label className="block font-medium pt-4">Método de Pago</label>
                         <div className="flex space-x-2">
-                            {['efectivo', 'tarjeta'].map((method) => (
+                            {['efectivo', 'tarjeta', 'transferencia'].map((method) => (
                                 <button key={method} onClick={() => setPaymentMethod(method as PaymentMethod)} 
                                     className={`flex-1 py-2 rounded-lg transition-colors ${paymentMethod === method ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'}`}>
                                     {method === 'efectivo' ? <FaMoneyBillWave className="inline mr-2" /> : <FaCreditCard className="inline mr-2" />} {method.charAt(0).toUpperCase() + method.slice(1)}
@@ -367,7 +316,9 @@ const BillingModal: React.FC<BillingModalProps> = ({ order, onClose, onPaymentSu
                                     className="w-full p-3 border border-gray-300 rounded-lg text-2xl font-bold mt-1"
                                     placeholder={total.toFixed(2)}
                                 />
-                                <p className="mt-2 text-red-600 text-sm">Cambio: Q{(Math.max(0, cashReceived - total)).toFixed(2)}</p>
+                                <p className={`mt-2 text-sm ${cambio >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                    Cambio: Q{cambio.toFixed(2)}
+                                </p>
                             </div>
                         )}
                         
@@ -385,13 +336,169 @@ const BillingModal: React.FC<BillingModalProps> = ({ order, onClose, onPaymentSu
                     <button onClick={onClose} className="py-2 px-6 bg-gray-200 rounded-lg hover:bg-gray-300">Cancelar</button>
                     <button 
                         onClick={handleConfirmPayment} 
-                        disabled={paymentStatus === 'processing' || (paymentMethod === 'efectivo' && cashReceived < total)} 
+                        disabled={paymentStatus === 'processing' || (paymentMethod === 'efectivo' && cashReceived < minCash)} 
                         className="py-2 px-6 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 flex items-center"
                     >
                         {paymentStatus === 'processing' ? <FaSpinner className="animate-spin mr-2" /> : <FaCheckCircle className="mr-2" />} Confirmar Pago
                     </button>
                 </footer>
             </div>
+        </div>
+    );
+};
+
+
+// --- COMPONENTE PRINCIPAL FacturacionPage (Nueva Versión) ---
+
+const FacturacionPage: React.FC = () => {
+    const { user } = useAuth();
+    const [ordenes, setOrdenes] = useState<OrdenFacturable[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [selectedOrden, setSelectedOrden] = useState<OrdenFacturable | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
+    // ✅ Control de acceso: Solo CAJERO, ADMIN o ENCARGADO
+    const tieneAcceso = ['ADMINISTRADOR', 'CAJERO', 'ENCARGADO'].includes(user?.rol?.toUpperCase() || '');
+
+    useEffect(() => {
+        if (tieneAcceso) {
+            fetchOrdenes();
+        }
+    }, [tieneAcceso]);
+
+    const fetchOrdenes = async () => {
+        setLoading(true);
+        try {
+            // ✅ AJUSTE CLAVE: Filtrar ahora solo órdenes en estado 'listo',
+            // eliminando el paso intermedio de 'servida' para el Cajero.
+            const response = await api.get('/api/ordenes', {
+                params: { estados: 'listo' } // <-- ¡Cambiado de 'servida' a 'listo'!
+            });
+            setOrdenes(response.data);
+        } catch (error) {
+            console.error('Error al cargar órdenes:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleOpenModal = (orden: OrdenFacturable) => {
+        setSelectedOrden(orden);
+        setIsModalOpen(true);
+    };
+
+    const handleCloseModal = () => {
+        setIsModalOpen(false);
+        setSelectedOrden(null);
+    };
+
+    const handlePagoExitoso = () => {
+        fetchOrdenes(); // Refrescar lista
+        handleCloseModal();
+    };
+
+    const ordenesFiltradas = ordenes.filter(o =>
+        o.numeroOrden.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        o.numeroMesa?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        o.nombreCliente?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    if (!tieneAcceso) {
+        return <Navigate to="/unauthorized" replace />;
+    }
+
+    return (
+        <div className="p-6 bg-gray-100 min-h-screen">
+            <header className="flex justify-between items-center mb-6">
+                <h1 className="text-3xl font-bold text-gray-800">
+                    💳 Caja / Facturación
+                </h1>
+                <div className="text-sm text-gray-600">
+                    <strong>{ordenesFiltradas.length}</strong> órdenes pendientes de pago
+                </div>
+            </header>
+
+            {/* Buscador */}
+            <div className="mb-6">
+                <div className="relative max-w-md">
+                    <FaSearch className="absolute left-3 top-3 text-gray-400" />
+                    <input
+                        type="text"
+                        placeholder="Buscar por N° Orden, Mesa o Cliente..."
+                        value={searchTerm}
+                        onChange={e => setSearchTerm(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                </div>
+            </div>
+
+            {loading ? (
+                <div className="flex justify-center items-center h-64">
+                    <FaSpinner className="animate-spin text-4xl text-blue-600" />
+                </div>
+            ) : ordenesFiltradas.length === 0 ? (
+                <div className="bg-white p-8 rounded-lg shadow text-center">
+                    <FaCheckCircle className="text-green-500 text-6xl mx-auto mb-4" />
+                    <h2 className="text-xl font-bold text-gray-700">No hay órdenes pendientes de pago</h2>
+                    <p className="text-gray-500 mt-2">Todas las órdenes están pagadas o en proceso</p>
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {ordenesFiltradas.map(orden => (
+                        <div key={orden.ordenId} className="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow">
+                            <div className="flex justify-between items-start mb-4">
+                                <div>
+                                    <h3 className="text-xl font-bold text-gray-800">{orden.numeroOrden}</h3>
+                                    <p className="text-sm text-gray-500">
+                                        {new Date(orden.fechaOrden).toLocaleString('es-GT', {
+                                            day: '2-digit',
+                                            month: '2-digit',
+                                            hour: '2-digit',
+                                            minute: '2-digit'
+                                        })}
+                                    </p>
+                                </div>
+                                <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded">
+                                    Mesa {orden.numeroMesa || 'N/A'}
+                                </span>
+                            </div>
+
+                            {orden.nombreCliente && (
+                                <p className="text-sm text-gray-600 mb-2">
+                                    👤 {orden.nombreCliente}
+                                </p>
+                            )}
+
+                            <div className="border-t pt-4 mt-4">
+                                <div className="flex justify-between items-center mb-4">
+                                    <span className="text-gray-600">Total:</span>
+                                    <span className="text-2xl font-bold text-green-600">
+                                        Q{orden.totalOrden.toFixed(2)}
+                                    </span>
+                                </div>
+
+                                <button
+                                    onClick={() => handleOpenModal(orden)}
+                                    className="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors flex items-center justify-center"
+                                >
+                                    <FaReceipt className="mr-2" />
+                                    Facturar
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {isModalOpen && selectedOrden && (
+                <BillingModal
+                    orden={selectedOrden}
+                    cajeroId={user!.usuarioId}
+                    onClose={handleCloseModal}
+                    onPagoExitoso={handlePagoExitoso}
+                />
+            )}
         </div>
     );
 };

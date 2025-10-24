@@ -9,6 +9,7 @@ import com.wokAsianF.demo.enums.EstadoPreparacion;
 import com.wokAsianF.demo.enums.RolUsuario;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional; // Importante para iniciarPreparacion/marcarListo
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -20,6 +21,9 @@ public class CocinaService {
     private OrdenPlatilloRepository ordenPlatilloRepository;
     @Autowired
     private UsuarioRepository usuarioRepository;
+    // ✅ NUEVA INYECCIÓN DEL SERVICIO DE TRANSICIONES
+    @Autowired
+    private EstadoOrdenService estadoOrdenService; 
 
     public List<PlatilloCocinaDTO> obtenerPlatillosPendientes() {
         List<OrdenPlatillo> platillos = ordenPlatilloRepository.findByEstadoPreparacion(EstadoPreparacion.pendiente);
@@ -63,7 +67,9 @@ public class CocinaService {
                         : null);
         return dto;
     }
-
+    
+    // NOTA: Se añade @Transactional si no estaba, para asegurar la consistencia.
+    @Transactional 
     public boolean iniciarPreparacion(Integer ordenPlatilloId, Integer cocineroId) {
         Optional<OrdenPlatillo> platilloOpt = ordenPlatilloRepository.findById(ordenPlatilloId);
         Optional<Usuario> cocineroOpt = usuarioRepository.findById(cocineroId);
@@ -71,36 +77,49 @@ public class CocinaService {
         if (!platilloOpt.isPresent() || !cocineroOpt.isPresent()) {
             return false;
         }
+        
         OrdenPlatillo platillo = platilloOpt.get();
         Usuario cocinero = cocineroOpt.get();
 
         if (cocinero.getRol() != RolUsuario.COCINERO && cocinero.getRol() != RolUsuario.ADMIN) {
             return false;
         }
-
+        
         if (platillo.getEstadoPreparacion() != EstadoPreparacion.pendiente) {
             return false;
         }
-
+        
         platillo.setEstadoPreparacion(EstadoPreparacion.en_cocina);
         platillo.setCocineroAsignado(cocinero);
         platillo.setHoraInicioPreparacion(LocalDateTime.now());
         ordenPlatilloRepository.save(platillo);
+        
+        // ✅ ACTUALIZAR ESTADO DE LA ORDEN AUTOMÁTICAMENTE
+        estadoOrdenService.actualizarEstadoAutomatico(platillo.getOrden().getOrdenId());
+        
         return true;
     }
 
+    // NOTA: Se añade @Transactional si no estaba, para asegurar la consistencia.
+    @Transactional 
     public boolean marcarListo(Integer ordenPlatilloId) {
         Optional<OrdenPlatillo> platilloOpt = ordenPlatilloRepository.findById(ordenPlatilloId);
         if (!platilloOpt.isPresent()) {
             return false;
         }
+        
         OrdenPlatillo platillo = platilloOpt.get();
         if (platillo.getEstadoPreparacion() != EstadoPreparacion.en_cocina) {
             return false;
         }
+        
         platillo.setEstadoPreparacion(EstadoPreparacion.listo);
         platillo.setHoraFinPreparacion(LocalDateTime.now());
         ordenPlatilloRepository.save(platillo);
+        
+        // ✅ ACTUALIZAR ESTADO DE LA ORDEN AUTOMÁTICAMENTE
+        estadoOrdenService.actualizarEstadoAutomatico(platillo.getOrden().getOrdenId());
+        
         return true;
     }
 }

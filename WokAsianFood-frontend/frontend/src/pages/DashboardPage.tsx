@@ -5,7 +5,7 @@ import { Loader2 } from 'lucide-react';
 
 const DashboardPage: React.FC = () => {
     const navigate = useNavigate();
-    const { user, loading } = useAuth(); 
+    const { user, loading } = useAuth();
 
     useEffect(() => {
         if (loading) {
@@ -17,12 +17,8 @@ const DashboardPage: React.FC = () => {
             return;
         }
 
-        // ******************************************************
-        // CAMBIO CLAVE: Convertir el rol a MAYÚSCULAS antes del switch
-        // ******************************************************
         const userRolUpper = user.rol.toUpperCase();
 
-        // Redirigir según el rol del usuario
         switch (userRolUpper) {
             case 'ADMIN':
                 navigate('/admin/estadisticas', { replace: true });
@@ -33,11 +29,13 @@ const DashboardPage: React.FC = () => {
             case 'COCINERO':
                 navigate('/cocina/pedidos', { replace: true });
                 break;
-            case 'ENCARGADO': 
+            case 'CAJERO': // ✅ NUEVO
+                navigate('/caja/facturacion', { replace: true });
+                break;
+            case 'ENCARGADO':
                 navigate('/inventario/suministros', { replace: true });
                 break;
             default:
-                // Si el rol es desconocido o no tiene una ruta asignada
                 navigate('/unauthorized', { replace: true });
                 break;
         }
