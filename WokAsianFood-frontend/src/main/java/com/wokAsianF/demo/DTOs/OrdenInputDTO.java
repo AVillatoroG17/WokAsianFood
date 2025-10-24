@@ -3,6 +3,7 @@ package com.wokAsianF.demo.DTOs;
 import com.wokAsianF.demo.enums.TipoOrden;
 import java.util.List;
 import java.math.BigDecimal; // Asegúrate de tener este import
+import com.wokAsianF.demo.enums.TipoOrden;
 
 public class OrdenInputDTO {
     private Integer mesaId;

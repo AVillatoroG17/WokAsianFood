@@ -1,24 +1,53 @@
 import api from './api';
-
-export interface IOrden {
-    ordenId: number;
-    numeroOrden: string;
-    estadoOrden: string; // Ejemplo: 'ABIERTA', 'LISTA_PARA_SERVIR', 'SERVIDA', 'LISTA_PARA_PAGO'
-    
-}
+import { IOrdenDTO } from '../models/IOrden';
 
 const API_URL = '/api/ordenes';
 
-export const marcarOrdenComoServida = async (ordenId: number, meseroId: number): Promise<IOrden> => {
-    // Usamos PATCH y pasamos meseroId como Query Parameter
-    const response = await api.patch<IOrden>(`${API_URL}/${ordenId}/servida`, {}, {
+export interface IOrdenInputDTO {
+    mesaId: number;
+    clienteId?: number;
+    meseroId: number;
+    tipoOrden: 'mesa' | 'para_llevar' | 'domicilio';
+    notasGenerales?: string;
+    direccionEntrega?: string;
+    telefonoContacto?: string;
+    numeroPersonas: number;
+    platillos: Array<{
+        platilloId: number;
+        cantidad: number;
+        notasPlatillo?: string;
+    }>;
+}
+
+export const createOrden = async (ordenData: IOrdenInputDTO): Promise<IOrdenDTO> => {
+    console.log('📤 Enviando orden al backend:', ordenData);
+    const response = await api.post<IOrdenDTO>(API_URL, ordenData);
+    console.log('✅ Respuesta del backend:', response.data);
+    return response.data;
+};
+
+export const getOrdenes = async (params?: {
+    estados?: string;
+    mesaId?: number;
+    meseroId?: number;
+}): Promise<IOrdenDTO[]> => {
+    const response = await api.get<IOrdenDTO[]>(API_URL, { params });
+    return response.data;
+};
+
+export const getOrdenById = async (ordenId: number): Promise<IOrdenDTO> => {
+    const response = await api.get<IOrdenDTO>(`${API_URL}/${ordenId}`);
+    return response.data;
+};
+
+export const marcarOrdenComoServida = async (ordenId: number, meseroId: number): Promise<IOrdenDTO> => {
+    const response = await api.patch<IOrdenDTO>(`${API_URL}/${ordenId}/servida`, {}, {
         params: { meseroId }
     });
     return response.data;
 };
 
-export const solicitarPagoOrden = async (ordenId: number): Promise<IOrden> => {
-    // Usamos PATCH
-    const response = await api.patch<IOrden>(`${API_URL}/${ordenId}/solicitar-pago`);
+export const solicitarPagoOrden = async (ordenId: number): Promise<IOrdenDTO> => {
+    const response = await api.patch<IOrdenDTO>(`${API_URL}/${ordenId}/solicitar-pago`);
     return response.data;
 };

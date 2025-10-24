@@ -2,15 +2,15 @@ import { IOrdenPlatillo } from "./IOrdenPlatillo";
 
 export interface IOrdenDTO {
     ordenId?: number; 
-    numeroOrden?: string; // Añadido para la vista de cocina
+    numeroOrden?: string;
     mesaId: number;
-    numeroMesa?: string; // Añadido para la vista de cocina
+    numeroMesa?: string;
     clienteId?: number;
-    nombreCliente?: string; // Añadido para la vista de cocina
+    nombreCliente?: string;
     meseroId: number;
-    nombreMesero?: string; // Añadido para la vista de cocina
-    estadoOrden: 'abierta' | 'enviada_cocina' | 'en_preparacion' | 'lista' | 'entregada' | 'pagada' | 'cancelada';
-    tipoOrden?: string; // Añadido para la vista de cocina
+    nombreMesero?: string;
+    estadoOrden: 'abierta' | 'enviada_cocina' | 'en_preparacion' | 'lista' | 'lista_para_servir' | 'entregada' | 'servida' | 'pagada' | 'cancelada';
+    tipoOrden?: 'mesa' | 'para_llevar' | 'domicilio';
     subtotal?: number;
     impuestos?: number;
     descuento?: number;
@@ -22,4 +22,3 @@ export interface IOrdenDTO {
     numeroPersonas?: number;
     platillos?: IOrdenPlatillo[];
 }
-
