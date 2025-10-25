@@ -1,5 +1,6 @@
+
 import api from './api';
-import { IUsuario } from '../models/IUsuario'; // Asumo que tienes un modelo IUsuario
+import { IUsuario } from '../models/IUsuario'; 
 
 const API_URL = '/api/v1/usuarios';
 
@@ -9,7 +10,6 @@ export const getUsuarios = async (): Promise<IUsuario[]> => {
 };
 
 export const createUsuario = async (usuarioData: any): Promise<any> => {
-    // El endpoint de registro está en /api/auth/registrar
     const response = await api.post('/api/auth/registrar', usuarioData);
     return response.data;
 };
@@ -19,6 +19,8 @@ export const updateUsuario = async (id: number, usuarioData: Partial<IUsuario>):
     return response.data;
 };
 
-export const deleteUsuario = async (id: number): Promise<void> => {
-    await api.delete(`${API_URL}/${id}`);
+export const desactivarUsuario = async (id: number): Promise<IUsuario> => {
+    const response = await api.patch<IUsuario>(`${API_URL}/${id}/desactivar`);
+    return response.data;
 };
+

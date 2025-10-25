@@ -47,18 +47,24 @@ public class UsuarioController {
 
     @PutMapping("/{id}")
     public ResponseEntity<Usuario> actualizar(@PathVariable Integer id, @RequestBody Usuario usuario) {
+        // Al usar orElseThrow en el servicio, Spring Boot capturará la excepción
+        // si no encuentra el usuario y devolverá un 404 (si tienes un @ControllerAdvice)
+        // o 500. Ya no es necesario el 'if (usuarioActualizado != null)'.
         Usuario usuarioActualizado = usuarioService.actualizar(id, usuario);
-        if (usuarioActualizado != null) {
-            return ResponseEntity.ok(usuarioActualizado);
-        }
-        return ResponseEntity.notFound().build();
+        return ResponseEntity.ok(usuarioActualizado);
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> eliminar(@PathVariable Integer id) {
-        if (usuarioService.eliminar(id)) {
-            return ResponseEntity.ok().build();
-        }
-        return ResponseEntity.notFound().build();
+    // ----------------------------------------------------
+    // ✅ FUNCIÓN DESACTIVAR CORREGIDA
+    // La línea 61 de tu antiguo log era donde fallaba.
+    // ----------------------------------------------------
+    @PatchMapping("/{id}/desactivar")
+    public ResponseEntity<UsuarioDTO> desactivar(@PathVariable Integer id) {
+        // Llama al servicio. Si el usuario no existe, el servicio lanza
+        // ResourceNotFoundException, que será manejada por Spring.
+        UsuarioDTO usuarioDesactivado = usuarioService.desactivar(id);
+        
+        // Si todo sale bien, retorna 200 OK con el DTO del usuario
+        return ResponseEntity.ok(usuarioDesactivado);
     }
 }

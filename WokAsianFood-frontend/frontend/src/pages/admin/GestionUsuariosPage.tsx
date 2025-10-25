@@ -9,7 +9,7 @@ interface IUsuario {
     nombreUsuario: string;
     nombreCompleto: string;
     email?: string;
-    rol: 'ADMIN' | 'MESERO' | 'COCINERO' | 'ENCARGADO' | 'CAJERO'; // ✅ CAJERO agregado
+    rol: 'ADMIN' | 'MESERO' | 'COCINERO' | 'ENCARGADO' | 'CAJERO';
     activo: boolean;
     fechaCreacion: string;
     ultimoAcceso?: string;
@@ -29,9 +29,10 @@ type FormDataType = Partial<IUsuario> & {
 
 type ModalType = 'CREATE' | 'EDIT' | 'PASSWORD' | 'DELETE' | null;
 
-import { getUsuarios, createUsuario, updateUsuario, deleteUsuario } from '../../services/usuarioService';
+// ⚠️ CAMBIO CLAVE AQUÍ: Importamos la nueva función 'desactivarUsuario'
+import { getUsuarios, createUsuario, updateUsuario, desactivarUsuario } from '../../services/usuarioService';
 
-// --- COMPONENTE: Mensaje de Alerta ---
+// --- COMPONENTE: Mensaje de Alerta (sin cambios) ---
 const AlertMessage: React.FC<{ message: { text: string, type: 'error' | 'success' } | null, onClose: () => void }> = ({ message, onClose }) => {
     if (!message) return null;
     const isError = message.type === 'error';
@@ -49,14 +50,14 @@ const AlertMessage: React.FC<{ message: { text: string, type: 'error' | 'success
     );
 };
 
-// --- COMPONENTE: Badge de Rol ---
+// --- COMPONENTE: Badge de Rol (sin cambios) ---
 const RoleBadge: React.FC<{ role: IUsuario['rol'] }> = ({ role }) => {
     const roleConfig = {
         ADMIN: { color: 'bg-red-500', icon: <Shield size={14}/>, label: 'Administrador' },
         MESERO: { color: 'bg-blue-500', icon: <User size={14}/>, label: 'Mesero' },
         COCINERO: { color: 'bg-orange-500', icon: <ChefHat size={14}/>, label: 'Cocinero' },
         ENCARGADO: { color: 'bg-purple-500', icon: <Briefcase size={14}/>, label: 'Encargado' },
-        CAJERO: { color: 'bg-green-500', icon: <CreditCard size={14}/>, label: 'Cajero' }, // ✅ NUEVO
+        CAJERO: { color: 'bg-green-500', icon: <CreditCard size={14}/>, label: 'Cajero' },
     };
 
     const config = roleConfig[role] || { color: 'bg-gray-500', icon: <User size={14}/>, label: role };
@@ -69,7 +70,7 @@ const RoleBadge: React.FC<{ role: IUsuario['rol'] }> = ({ role }) => {
     );
 };
 
-// --- COMPONENTE: Modal de Formulario de Usuario ---
+// --- COMPONENTE: Modal de Formulario de Usuario (sin cambios en la estructura principal) ---
 const UserFormModal: React.FC<{ 
     userToEdit: IUsuario | null;
     allUsers: IUsuario[];
@@ -81,7 +82,6 @@ const UserFormModal: React.FC<{
     );
     const [showMasterKey, setShowMasterKey] = useState(formData.rol === 'ADMIN');
 
-    // Verificar si ya existe un usuario con un rol único
     const adminExists = useMemo(() => {
         return allUsers.some(u => u.rol === 'ADMIN' && u.usuarioId !== userToEdit?.usuarioId);
     }, [allUsers, userToEdit]);
@@ -118,6 +118,8 @@ const UserFormModal: React.FC<{
                 </h2>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
+                    {/* ... (Campos de formulario sin cambios) ... */}
+
                     {/* Nombre de Usuario */}
                     <div>
                         <label className="block font-medium mb-1">Nombre de Usuario</label>
@@ -207,7 +209,7 @@ const UserFormModal: React.FC<{
                         >
                             <option value="MESERO">👤 Mesero</option>
                             <option value="COCINERO">👨‍🍳 Cocinero</option>
-                            <option value="CAJERO">💳 Cajero</option> {/* ✅ NUEVO */}
+                            <option value="CAJERO">💳 Cajero</option>
                             <option 
                                 value="ENCARGADO" 
                                 disabled={encargadoExists && formData.rol !== 'ENCARGADO'}
@@ -345,22 +347,41 @@ const GestionUsuariosPage: React.FC = () => {
         }
     };
 
-    const handleDelete = async (user: IUsuario) => {
+    // --------------------------------------------------------
+    // ✅ FUNCIÓN CORREGIDA: Ahora realiza la DESACTIVACIÓN LÓGICA
+    // --------------------------------------------------------
+    const handleDesactivar = async (user: IUsuario) => {
         setMessage(null);
+
+        // 1. Prevenir que el admin se desactive a sí mismo
+        if (currentUser && user.usuarioId === currentUser.usuarioId) {
+             setMessage({ text: "No puedes desactivar tu propia cuenta de administrador.", type: 'error' });
+             return;
+        }
+
         try {
-            const confirmation = window.confirm(`¿Estás seguro de eliminar el usuario ${user.nombreUsuario}?`);
+            const confirmation = window.confirm(
+                `¿Estás seguro de DESACTIVAR al usuario ${user.nombreUsuario} (ID ${user.usuarioId})? 
+                 Esto lo marcará como INACTIVO y no podrá iniciar sesión.
+                 Sus registros (órdenes, etc.) se mantendrán, evitando el error de llave foránea.`
+            );
+            
             if (confirmation) {
-                await deleteUsuario(user.usuarioId);
-                setMessage({ text: `Usuario ${user.nombreUsuario} eliminado.`, type: 'success' });
-                fetchUsers();
+                // 2. Llama a la nueva función PATCH del servicio
+                await desactivarUsuario(user.usuarioId); 
+                
+                setMessage({ text: `Usuario ${user.nombreUsuario} ha sido **desactivado** (Inactivo).`, type: 'success' });
+                fetchUsers(); // Recargar la lista
             }
-        } catch (error) {
-            console.error("Error deleting user:", error);
-            setMessage({ text: "Error al eliminar el usuario.", type: 'error' });
+        } catch (error: any) {
+            console.error("Error desactivando usuario:", error);
+            const errorMessage = error.response?.data?.mensaje || error.message || 'Error al desactivar el usuario.';
+            setMessage({ text: errorMessage, type: 'error' });
         }
     };
+    // ⚠️ Nota: El método handleDelete ya no existe/es usado.
 
-    // Filtrado de usuarios
+    // Filtrado de usuarios (sin cambios)
     const filteredUsers = useMemo(() => {
         return users.filter(u =>
             u.nombreUsuario.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -369,20 +390,20 @@ const GestionUsuariosPage: React.FC = () => {
         );
     }, [users, searchTerm]);
 
-    // Estadísticas de usuarios por rol
+    // Estadísticas de usuarios por rol (sin cambios)
     const userStats = useMemo(() => {
         return {
             total: users.length,
             admin: users.filter(u => u.rol === 'ADMIN').length,
             mesero: users.filter(u => u.rol === 'MESERO').length,
             cocinero: users.filter(u => u.rol === 'COCINERO').length,
-            cajero: users.filter(u => u.rol === 'CAJERO').length, // ✅ NUEVO
+            cajero: users.filter(u => u.rol === 'CAJERO').length,
             encargado: users.filter(u => u.rol === 'ENCARGADO').length,
             activos: users.filter(u => u.activo).length,
         };
     }, [users]);
 
-    // Control de acceso
+    // Control de acceso (sin cambios)
     if (authLoading) {
         return (
             <div className="flex justify-center items-center h-screen">
@@ -402,14 +423,14 @@ const GestionUsuariosPage: React.FC = () => {
 
     return (
         <div className="p-4 md:p-8 bg-gray-50 min-h-screen">
-            {/* Header */}
+            {/* Header y Buscador (sin cambios) */}
             <header className="flex flex-col sm:flex-row justify-between items-center mb-6">
                 <div>
                     <h1 className="text-3xl md:text-4xl font-extrabold text-gray-800 flex items-center mb-2">
                         <Shield className="mr-3 w-8 h-8 text-blue-600"/> 
                         Gestión de Usuarios
                     </h1>
-                    {/* Estadísticas rápidas */}
+                    {/* Estadísticas rápidas (sin cambios) */}
                     <div className="flex flex-wrap gap-2 text-sm text-gray-600">
                         <span>👥 Total: <strong>{userStats.total}</strong></span>
                         <span>•</span>
@@ -417,7 +438,7 @@ const GestionUsuariosPage: React.FC = () => {
                         <span>•</span>
                         <span>👨‍🍳 Cocineros: <strong>{userStats.cocinero}</strong></span>
                         <span>•</span>
-                        <span>💳 Cajeros: <strong>{userStats.cajero}</strong></span> {/* ✅ NUEVO */}
+                        <span>💳 Cajeros: <strong>{userStats.cajero}</strong></span>
                     </div>
                 </div>
                 <button
@@ -429,7 +450,7 @@ const GestionUsuariosPage: React.FC = () => {
                 </button>
             </header>
 
-            {/* Buscador */}
+            {/* Buscador (sin cambios) */}
             <div className="mb-6">
                 <input
                     type="text"
@@ -448,6 +469,7 @@ const GestionUsuariosPage: React.FC = () => {
             ) : (
                 <div className="bg-white shadow-xl rounded-xl overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
+                        {/* Thead (sin cambios) */}
                         <thead className="bg-gray-100">
                             <tr>
                                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
@@ -493,6 +515,7 @@ const GestionUsuariosPage: React.FC = () => {
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+                                        {/* Botón de Editar (sin cambios) */}
                                         <button
                                             onClick={() => setModal({ type: 'EDIT', data: user })}
                                             className="text-indigo-600 hover:text-indigo-900 p-1 rounded-full hover:bg-indigo-50 transition duration-150"
@@ -500,11 +523,29 @@ const GestionUsuariosPage: React.FC = () => {
                                         >
                                             <Edit className="w-5 h-5"/>
                                         </button>
+                                        
+                                        {/* -------------------------------------------------------- */}
+                                        {/* ✅ BOTÓN DE DESACTIVAR LÓGICAMENTE (Reemplaza a Eliminar) */}
+                                        {/* -------------------------------------------------------- */}
                                         <button
-                                            disabled={currentUser ? user.usuarioId === currentUser.usuarioId : false}
-                                            onClick={() => handleDelete(user)}
-                                            className="text-red-600 hover:text-red-900 p-1 rounded-full hover:bg-red-50 transition duration-150 disabled:text-gray-300"
-                                            title={currentUser ? (user.usuarioId === currentUser.usuarioId ? "No puedes eliminar tu propia cuenta" : "Eliminar Usuario") : "Eliminar Usuario"}
+                                            // Deshabilitado si el usuario es el actual O si ya está inactivo
+                                            disabled={currentUser ? (user.usuarioId === currentUser.usuarioId || !user.activo) : false}
+                                            onClick={() => handleDesactivar(user)} // ⬅️ Llama a la nueva función
+                                            className={`p-1 rounded-full hover:bg-red-50 transition duration-150 
+                                                ${user.activo 
+                                                    ? 'text-red-600 hover:text-red-900' 
+                                                    : 'text-gray-400 cursor-not-allowed'
+                                                }
+                                                disabled:text-gray-300
+                                            `}
+                                            title={
+                                                currentUser 
+                                                    ? (user.usuarioId === currentUser.usuarioId 
+                                                        ? "No puedes desactivar tu propia cuenta" 
+                                                        : (user.activo ? "Desactivar Usuario (Lo hace INACTIVO)" : "El usuario ya está inactivo")
+                                                      ) 
+                                                    : "Desactivar Usuario"
+                                            }
                                         >
                                             <Trash2 className="w-5 h-5"/>
                                         </button>
@@ -516,7 +557,7 @@ const GestionUsuariosPage: React.FC = () => {
                 </div>
             )}
 
-            {/* Renderizar Modales */}
+            {/* Modales y Alerta (sin cambios) */}
             {(modal.type === 'CREATE' || modal.type === 'EDIT') && (
                 <UserFormModal
                     userToEdit={modal.data}
@@ -526,7 +567,6 @@ const GestionUsuariosPage: React.FC = () => {
                 />
             )}
 
-            {/* Mensaje de Alerta/Error */}
             <AlertMessage message={message} onClose={() => setMessage(null)} />
         </div>
     );

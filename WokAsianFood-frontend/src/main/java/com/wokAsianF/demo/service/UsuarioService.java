@@ -12,16 +12,19 @@ import com.wokAsianF.demo.DTOs.RegistroResponseDTO;
 import com.wokAsianF.demo.DTOs.UsuarioDTO;
 import com.wokAsianF.demo.entity.Usuario;
 import com.wokAsianF.demo.enums.RolUsuario;
+import com.wokAsianF.demo.exception.ResourceNotFoundException; // ⚠️ Necesitarás esta clase
 import com.wokAsianF.demo.repository.UsuarioRepository;
 
 @Service
 public class UsuarioService {
-    
+
     @Autowired
     private UsuarioRepository usuarioRepository;
-    
+
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    // --- Métodos de Listado y Obtención (sin cambios) ---
 
     public List<UsuarioDTO> obtenerTodos(RolUsuario rol) {
         List<Usuario> usuarios;
@@ -53,100 +56,102 @@ public class UsuarioService {
         return dto;
     }
 
+    // --- Métodos de Creación y Registro (sin cambios) ---
+
     public Usuario crear(Usuario usuario) {
-        // Asegúrate de hashear la contraseña si se llama a este método con password plana
         usuario.setFechaCreacion(LocalDateTime.now());
         return usuarioRepository.save(usuario);
     }
 
     public RegistroResponseDTO registrar(RegistroDTO registroDTO) {
+        // ... (Tu lógica de registro, sin cambios relevantes) ...
         RegistroResponseDTO response = new RegistroResponseDTO();
-        
-        // --- Lógica de validación (sin cambios) ---
+
         if (registroDTO.getNombreUsuario() == null || registroDTO.getNombreUsuario().trim().isEmpty() ||
-            registroDTO.getNombreCompleto() == null || registroDTO.getNombreCompleto().trim().isEmpty() ||
-            registroDTO.getPassword() == null || registroDTO.getPassword().isEmpty() ||
-            registroDTO.getRol() == null) {
-            
+                registroDTO.getNombreCompleto() == null || registroDTO.getNombreCompleto().trim().isEmpty() ||
+                registroDTO.getPassword() == null || registroDTO.getPassword().isEmpty() ||
+                registroDTO.getRol() == null) {
+
             response.setExito(false);
             response.setMensaje("Todos los campos principales (usuario, nombre, password, rol) son obligatorios.");
             return response;
         }
-        
+
         if (registroDTO.getNombreUsuario().length() < 4 || registroDTO.getPassword().length() < 6) {
             response.setExito(false);
             response.setMensaje("El nombre de usuario debe tener al menos 4 caracteres y la contraseña al menos 6.");
             return response;
         }
-        
-        // ----------------------------------------------------
-        // CORRECCIÓN LÍNEA 88: Usar isPresent() para validar existencia
-        // ----------------------------------------------------
+
         if (usuarioRepository.findByNombreUsuario(registroDTO.getNombreUsuario()).isPresent()) {
             response.setExito(false);
             response.setMensaje("El nombre de usuario ya está en uso.");
             return response;
         }
-        
+
         if (registroDTO.getEmail() != null && !registroDTO.getEmail().trim().isEmpty()) {
-            // ----------------------------------------------------
-            // CORRECCIÓN LÍNEA 96: Usar isPresent() para validar existencia
-            // ----------------------------------------------------
             if (usuarioRepository.findByEmail(registroDTO.getEmail()).isPresent()) {
                 response.setExito(false);
                 response.setMensaje("El email ya está registrado.");
                 return response;
             }
         }
-        
-        // --- Lógica de Creación del Usuario ---
+
         Usuario nuevoUsuario = new Usuario();
         nuevoUsuario.setNombreUsuario(registroDTO.getNombreUsuario());
         nuevoUsuario.setNombreCompleto(registroDTO.getNombreCompleto());
         nuevoUsuario.setEmail(registroDTO.getEmail());
-        
-        // ENCRIPTAR LA CONTRASEÑA ANTES DE GUARDAR
+
         String hashedPassword = passwordEncoder.encode(registroDTO.getPassword());
-        nuevoUsuario.setPasswordHash(hashedPassword); 
-        
+        nuevoUsuario.setPasswordHash(hashedPassword);
+
         nuevoUsuario.setRol(registroDTO.getRol());
         nuevoUsuario.setFechaCreacion(LocalDateTime.now());
         nuevoUsuario.setActivo(true);
-        
+
         Usuario usuarioGuardado = usuarioRepository.save(nuevoUsuario);
-        
-        // ... (código de respuesta sin cambios) ...
+
         response.setExito(true);
         response.setMensaje("Usuario registrado exitosamente.");
         response.setUsuarioId(usuarioGuardado.getUsuarioId());
-        
+
         return response;
     }
 
+    // --- Método de Actualización (sin cambios) ---
 
     public Usuario actualizar(Integer id, Usuario usuarioActualizado) {
-        // En este caso, findById ya devuelve Optional y se usa .map() que es la forma correcta
         return usuarioRepository.findById(id)
-            .map(usuario -> {
-                usuario.setNombreUsuario(usuarioActualizado.getNombreUsuario());
-                usuario.setNombreCompleto(usuarioActualizado.getNombreCompleto());
-                usuario.setEmail(usuarioActualizado.getEmail());
-                
-                if (usuarioActualizado.getPasswordHash() != null && !usuarioActualizado.getPasswordHash().isEmpty()) {
-                     usuario.setPasswordHash(usuarioActualizado.getPasswordHash());
-                }
+                .map(usuario -> {
+                    usuario.setNombreUsuario(usuarioActualizado.getNombreUsuario());
+                    usuario.setNombreCompleto(usuarioActualizado.getNombreCompleto());
+                    usuario.setEmail(usuarioActualizado.getEmail());
 
-                usuario.setRol(usuarioActualizado.getRol());
-                usuario.setActivo(usuarioActualizado.getActivo());
-                return usuarioRepository.save(usuario);
-            }).orElse(null); // Retorna null si no se encuentra (se puede mejorar con Optional o Exception)
+                    if (usuarioActualizado.getPasswordHash() != null
+                            && !usuarioActualizado.getPasswordHash().isEmpty()) {
+                        usuario.setPasswordHash(usuarioActualizado.getPasswordHash());
+                    }
+
+                    usuario.setRol(usuarioActualizado.getRol());
+                    usuario.setActivo(usuarioActualizado.getActivo());
+                    return usuarioRepository.save(usuario);
+                })
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con ID: " + id)); // ⬅️ MEJORA: Lanza excepción si no existe
     }
 
-    public boolean eliminar(Integer id) {
-        if (usuarioRepository.existsById(id)) {
-            usuarioRepository.deleteById(id);
-            return true;
+    public UsuarioDTO desactivar(Integer id) { 
+        Usuario usuario = usuarioRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con ID: " + id));
+
+        if (!usuario.getActivo()) {
+            return convertirAUsuarioDTO(usuario);
         }
-        return false;
+
+        usuario.setActivo(false);
+
+        Usuario usuarioDesactivado = usuarioRepository.save(usuario);
+
+        return convertirAUsuarioDTO(usuarioDesactivado);
     }
 }
+
